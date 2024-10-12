@@ -21,4 +21,12 @@ Initilize the project
 go run main.go
 ```
 
+```bash
+go install github.com/air-verse/air@latest
+```
+For MacOS
+```bash
+alias air='$(go env GOPATH)/bin/air'
+```
+
 Then you have to go to `localhost:8080`
