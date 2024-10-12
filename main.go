@@ -1,10 +1,13 @@
 package main
 
 import (
+	"log"
 	"net/http"
+	"os"
 
 	"github.com/encall/cpeevent-backend/src/db"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func setupRouter() *gin.Engine {
@@ -56,8 +59,18 @@ func setupRouter() *gin.Engine {
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		log.Fatal("MONGO_URI is not set in .env file")
+	}
+
 	r := setupRouter()
-	db.ConnectMongoDB()
+	db.ConnectMongoDB(mongoURI)
 	// Listen and Server in 0.0.0.0:8080
 	r.Run(":8080")
 }
