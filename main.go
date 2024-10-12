@@ -1,35 +1,22 @@
 package main
 
 import (
-	"log"
-	"os"
-
-	"github.com/encall/cpeevent-backend/src/db"
 	"github.com/encall/cpeevent-backend/src/routes"
-
-	"github.com/joho/godotenv"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	// Load environment variables from .env file
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	r := gin.Default()
+	routes.UserRoutes(r)
+	// r.Use(middleware.Authentication())
 
-	// Get MongoDB URI from environment
-	mongoURI := os.Getenv("MONGO_URI")
-	if mongoURI == "" {
-		log.Fatal("MONGO_URI is not set in .env file")
-	}
-
-	// Connect to MongoDB
-	client := db.ConnectMongoDB(mongoURI)
-	defer client.Disconnect(nil) // Ensure the MongoDB client is disconnected at shutdown
-
-	// Set up routes
-	r := routes.SetupRouter(client)
+	// r.GET("/", func(ctx *gin.Context) {
+	// 	ctx.JSON(http.StatusOK, gin.H{"data": "Hello World"})
+	// })
 
 	// Start the Gin server on port 8080
+	
 	r.Run(":8080")
+	
 }
