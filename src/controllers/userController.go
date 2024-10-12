@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -24,7 +23,7 @@ import (
 var userCollection *mongo.Collection = database.OpenCollection(database.Client, "users")
 var validate = validator.New()
 
-//HashPassword is used to encrypt the password
+// HashPassword is used to encrypt the password
 func HashPassword(password string) string {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	if err != nil {
@@ -34,30 +33,33 @@ func HashPassword(password string) string {
 	return string(bytes)
 }
 
-//VerifyPassword checks
+// VerifyPassword checks
 func VerifyPassword(userPassword string, providedPassword string) (bool, string) {
 	err := bcrypt.CompareHashAndPassword([]byte(providedPassword), []byte(userPassword))
 	check := true
 	msg := ""
 
 	if err != nil {
-		msg = fmt.Sprintf("login or passowrd is incorrect")
+		msg = "Login or Passowrd is incorrect"
 		check = false
 	}
 
 	return check, msg
 }
 
-//sign up user
+// sign up user
 func SignUp() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		var user models.User
+		defer cancel()
 
 		if err := c.BindJSON(&user); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
+
+		log.Println("Incoming JSON payload for SignUp:", user)
 
 		validationErr := validate.Struct(user)
 		if validationErr != nil {
@@ -75,8 +77,8 @@ func SignUp() gin.HandlerFunc {
 			return
 		}
 
-		password := HashPassword(*user.Password)
-		user.Password = &password
+		password := HashPassword(user.Password)
+		user.Password = password
 
 		if count > 0 {
 			c.JSON(http.StatusInternalServerError,
@@ -88,36 +90,39 @@ func SignUp() gin.HandlerFunc {
 		user.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 		user.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
-		token, refreshToken, _ := helper.GenerateAllTokens(*user.Email)
+		token, refreshToken, _ := helper.GenerateAllTokens(user.Email)
 		user.Token = &token
 		user.Refresh_token = &refreshToken
 
-		insertErr, _ := userCollection.InsertOne(ctx, user)
+		result, insertErr := userCollection.InsertOne(ctx, user)
+		log.Println("insertErr:", insertErr)
+		log.Println("result:", result)
+
 		if insertErr != nil {
-			msg := fmt.Sprintf("User item was not created")
+			msg := "User item was not created"
 			c.JSON(http.StatusInternalServerError,
 				gin.H{"success": false, "data": nil, "message": msg})
-
 			return
 		}
-		defer cancel()
 
-		c.JSON(http.StatusOK, gin.H{"success": true, "data": nil, "message": "user signup sucess"})
-
+		c.JSON(http.StatusOK, gin.H{"success": true, "data": result.InsertedID, "message": "user signup success"})
 	}
 }
 
-//Login user
+// Login user
 func Login() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		var user models.User
 		var foundUser models.User
+		defer cancel()
 
 		if err := c.BindJSON(&user); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
+
+		log.Println("Incoming JSON payload for Login:", user)
 
 		err := userCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&foundUser)
 		defer cancel()
@@ -126,20 +131,20 @@ func Login() gin.HandlerFunc {
 			return
 		}
 
-		passwordIsValid, msg := VerifyPassword(*user.Password, *foundUser.Password)
+		passwordIsValid, msg := VerifyPassword(user.Password, foundUser.Password)
 		defer cancel()
 		if passwordIsValid != true {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 			return
 		}
 
-		if foundUser.Email == nil {
+		if foundUser.Email == "" {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "user not found"})
 			return
 		}
-		token, refreshToken, _ := helper.GenerateAllTokens(*foundUser.Email)
+		token, refreshToken, _ := helper.GenerateAllTokens(foundUser.Email)
 
-		helper.UpdateAllTokens(token, refreshToken, *foundUser.Email)
+		helper.UpdateAllTokens(token, refreshToken, foundUser.Email)
 		err = userCollection.FindOne(ctx, bson.M{"email": foundUser.Email}).Decode(&foundUser)
 
 		if err != nil {
