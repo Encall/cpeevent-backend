@@ -1,16 +1,41 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"log"
 	"net/http"
+	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"github.com/gin-gonic/gin"
 )
 
 var db = make(map[string]string)
 
+func connectToMongo() *mongo.Client {
+	clientOptions := options.Client().ApplyURI("mongodb://localhost:27023")
+	client, err := mongo.Connect(context.Background(), clientOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	err = client.Ping(ctx, readpref.Primary())
+	if err != nil {
+		log.Fatal("Could not connect to MongoDB:", err)
+	}
+
+	fmt.Println("Connected to MongoDB!")
+	return client
+}
+
 func setupRouter() *gin.Engine {
-	// Disable Console Color
-	// gin.DisableConsoleColor()
 	r := gin.Default()
 
 	// Ping test
@@ -18,51 +43,75 @@ func setupRouter() *gin.Engine {
 		c.String(http.StatusOK, "pong")
 	})
 
-	// Get user value
-	r.GET("/user/:name", func(c *gin.Context) {
-		user := c.Params.ByName("name")
-		value, ok := db[user]
-		if ok {
-			c.JSON(http.StatusOK, gin.H{"user": user, "value": value})
-		} else {
-			c.JSON(http.StatusOK, gin.H{"user": user, "status": "no value"})
+	// GET /events (retrieve all events)
+	r.GET("/events", func(c *gin.Context) {
+		client := connectToMongo()
+		collection := client.Database("cpeEVO").Collection("events")
+
+		var results []struct {
+			EventName       string    `json:"eventName"`
+			EventDescription string   `json:"eventDescription"`
+			NParticipant    int       `json:"nParticipant"`
+			Participants    []string  `json:"participants"`
+			NStaff          int       `json:"nStaff"`
+			StartDate       time.Time `json:"startDate"`
+			EndDate         time.Time `json:"endDate"`
+			President       string    `json:"president"`
+			Kind            string    `json:"kind"`
+			Role            []string  `json:"role"`
+			Icon            *string   `json:"icon"`
+			Poster          *string   `json:"poster"`
 		}
+
+		cursor, err := collection.Find(context.Background(), bson.M{})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		defer cursor.Close(context.Background())
+
+		if err = cursor.All(context.Background(), &results); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, results)
 	})
-	fmt.Println("Hello World1")
 
-	// Authorized group (uses gin.BasicAuth() middleware)
-	// Same than:
-	// authorized := r.Group("/")
-	// authorized.Use(gin.BasicAuth(gin.Credentials{
-	//	  "foo":  "bar",
-	//	  "manu": "123",
-	//}))
-	authorized := r.Group("/", gin.BasicAuth(gin.Accounts{
-		"foo":  "bar", // user:foo password:bar
-		"manu": "123", // user:manu password:123
-	}))
+	// POST /events (insert new event)
+	r.POST("/events", func(c *gin.Context) {
+		client := connectToMongo()
+		collection := client.Database("cpeEVO").Collection("events")
 
-	/* example curl for /admin with basicauth header
-	   Zm9vOmJhcg== is base64("foo:bar")
-
-		curl -X POST \
-	  	http://localhost:8080/admin \
-	  	-H 'authorization: Basic Zm9vOmJhcg==' \
-	  	-H 'content-type: application/json' \
-	  	-d '{"value":"bar"}'
-	*/
-	authorized.POST("admin", func(c *gin.Context) {
-		user := c.MustGet(gin.AuthUserKey).(string)
-
-		// Parse JSON
-		var json struct {
-			Value string `json:"value" binding:"required"`
+		var event struct {
+			EventName       string    `json:"eventName" binding:"required"`
+			EventDescription string   `json:"eventDescription"`
+			NParticipant    int       `json:"nParticipant"`
+			Participants    []string  `json:"participants"`
+			NStaff          int       `json:"nStaff"`
+			StartDate       time.Time `json:"startDate"`
+			EndDate         time.Time `json:"endDate"`
+			President       string    `json:"president"`
+			Kind            string    `json:"kind"`
+			Role            []string  `json:"role"`
+			Icon            *string   `json:"icon"`
+			Poster          *string   `json:"poster"`
 		}
 
-		if c.Bind(&json) == nil {
-			db[user] = json.Value
-			c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		// Bind the incoming JSON to the event struct
+		if err := c.BindJSON(&event); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+			return
 		}
+
+		// Insert the event into MongoDB
+		_, err := collection.InsertOne(context.Background(), event)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to insert event"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Event created successfully!"})
 	})
 
 	return r
@@ -70,6 +119,5 @@ func setupRouter() *gin.Engine {
 
 func main() {
 	r := setupRouter()
-	// Listen and Server in 0.0.0.0:8080
 	r.Run(":8080")
 }

@@ -1,0 +1,36 @@
+[{
+  "_id": 1,
+  "eventName": "COMCAMP34",
+  "eventDescription": "คอมแคมป์ เพื่อความสนุกสนานและการทดสอบระบบนะจ๊ะ",
+  "nParticipant": 0,
+  "participants": [
+    "65070501003",
+    "65070501038"
+  ],
+  "nStaff": 15,
+  "startDate": "2024-04-30T00:00:00Z",
+  "endDate": "2024-04-30T00:00:00Z",
+  "president": "65070501050",
+  "kind": "camp",
+  "role": [],
+  "icon": null,
+  "poster": null
+},
+{
+  "_id": 2,
+  "eventName": "Open House 2025",
+  "eventDescription": "โอเพ่นเฮาส์ เพื่อความสนุกสนานและการทดสอบระบบนะจ๊ะ",
+  "nParticipant": 0,
+  "participants": [
+    "65070501038",
+    "65070501064"
+  ],
+  "nStaff": 15,
+  "startDate": "2024-04-30T00:00:00Z",
+  "endDate": "2024-05-10T00:00:00Z",
+  "president": "65070501059",
+  "kind": "camp",
+  "role": [],
+  "icon": null,
+  "poster": null
+}]

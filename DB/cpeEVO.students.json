@@ -1,0 +1,16 @@
+[{
+  "_id": {
+    "$oid": "670a4f75585027017230e886"
+  },
+  "studentID": "65070501003",
+  "firstName": "Kittipong",
+  "middleName": "-",
+  "lastName": "Tapyou",
+  "year": 3,
+  "imgProfile": null,
+  "email": "kittipong.tapy@kmutt.ac.th",
+  "password": "1234",
+  "phoneNumber": "0620650992",
+  "username": "inteoty",
+  "access": 1
+}]
