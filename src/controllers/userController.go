@@ -22,7 +22,6 @@ import (
 )
 
 var userCollection *mongo.Collection = database.OpenCollection(database.Client, "users")
-var eventCollection *mongo.Collection = database.OpenCollection(database.Client, "events")
 var validate = validator.New()
 
 //HashPassword is used to encrypt the password
@@ -153,26 +152,5 @@ func Login() gin.HandlerFunc {
 			"refresh_token": foundUser.Refresh_token},
 			"message": "return successfully"})
 
-	}
-}
-
-func GetEvents() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-		var users []models.Event
-
-		cursor, err := eventCollection.Find(ctx, bson.M{})
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		defer cancel()
-
-		if err = cursor.All(ctx, &users); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{"success": true, "data": users})
 	}
 }
