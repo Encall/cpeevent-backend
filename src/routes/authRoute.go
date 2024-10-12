@@ -10,5 +10,5 @@ func UserRoutes(route *gin.Engine) {
 	route.POST("/users/signup", controllers.SignUp())
 	route.POST("/users/login", controllers.Login())
 	route.GET("/events", controllers.GetEvents())
-	route.GET("/searchEvents", controllers.SearchEvents())
+	route.GET("/searchEvents", controllers.SearchEvents()) //usage: /searchEvents?name=XXXXXX
 }
