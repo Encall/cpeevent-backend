@@ -20,7 +20,7 @@ var eventCollection *mongo.Collection = database.OpenCollection(database.Client,
 func GetEvents() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-		var users []models.Event
+		var events []models.Event
 
 		cursor, err := eventCollection.Find(ctx, bson.M{})
 		if err != nil {
@@ -29,11 +29,11 @@ func GetEvents() gin.HandlerFunc {
 		}
 		defer cancel()
 
-		if err = cursor.All(ctx, &users); err != nil {
+		if err = cursor.All(ctx, &events); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"success": true, "data": users})
+		c.JSON(http.StatusOK, gin.H{"success": true, "data": events})
 	}
 }
