@@ -18,6 +18,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var userCollection *mongo.Collection = database.OpenCollection(database.Client, "users")
@@ -91,6 +92,9 @@ func SignUp() gin.HandlerFunc {
 		password := HashPassword(user.Password)
 		user.Password = password
 
+		// Default user access when signing up
+		user.Access = 1
+
 		if count > 0 {
 			c.JSON(http.StatusConflict,
 				gin.H{"success": false, "data": nil, "message": "email or studentid ready exists"})
@@ -101,7 +105,7 @@ func SignUp() gin.HandlerFunc {
 		user.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 		user.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
-		token, refreshToken, _ := helper.GenerateAllTokens(user.Email)
+		token, refreshToken, _ := helper.GenerateAllTokens(user.Email, user.Access)
 		user.Token = &token
 		user.Refresh_token = &refreshToken
 
@@ -152,7 +156,7 @@ func Login() gin.HandlerFunc {
 			return
 		}
 
-		token, refreshToken, _ := helper.GenerateAllTokens(foundUser.Email)
+		token, refreshToken, _ := helper.GenerateAllTokens(foundUser.Email, foundUser.Access)
 		helper.UpdateAllTokens(token, refreshToken, foundUser.Email)
 
 		err = userCollection.FindOne(ctx, bson.M{"email": foundUser.Email}).Decode(&foundUser)
@@ -164,6 +168,79 @@ func Login() gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"success": true, "data": gin.H{
 			"token":         foundUser.Token,
 			"refresh_token": foundUser.Refresh_token},
+			"message": "return successfully"})
+	}
+}
+
+func RefreshToken() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		accessToken := c.Request.Header.Get("token")
+		if accessToken == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "No access token provided"})
+			return
+		}
+
+		accessClaims, msg := helper.ValidateToken(accessToken)
+		if msg != "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": msg})
+			return
+		}
+
+		refreshToken := c.Request.Header.Get("refresh_token")
+		if refreshToken == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "No refresh token provided"})
+			return
+		}
+
+		_, msg = helper.ValidateToken(refreshToken)
+		if msg != "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": msg})
+			return
+		}
+
+		var user models.User
+		err := userCollection.FindOne(ctx, bson.M{"email": accessClaims.Email, "refresh_token": refreshToken}).Decode(&user)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token"})
+			return
+		}
+
+		newToken, newRefreshToken, err := helper.GenerateAllTokens(accessClaims.Email, accessClaims.Access)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		updateObj := bson.D{
+			{"token", newToken},
+			{"refresh_token", newRefreshToken},
+		}
+
+		upsert := true
+		opt := options.UpdateOptions{
+			Upsert: &upsert,
+		}
+
+		_, err = userCollection.UpdateOne(
+			ctx,
+			bson.M{"email": accessClaims.Email},
+			bson.D{
+				{"$set", updateObj},
+			},
+			&opt,
+		)
+		if err != nil {
+			log.Panic(err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error updating tokens"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"success": true, "data": gin.H{
+			"token":         newToken,
+			"refresh_token": newRefreshToken},
 			"message": "return successfully"})
 	}
 }
