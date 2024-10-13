@@ -22,7 +22,7 @@ type SignedDetails struct {
 	jwt.StandardClaims
 }
 
-var userCollection *mongo.Collection = database.OpenCollection(database.Client, "user")
+var userCollection *mongo.Collection = database.OpenCollection(database.Client, "users")
 
 var SECRET_KEY string = os.Getenv("SECRET_KEY")
 
@@ -52,7 +52,7 @@ func GenerateAllTokens(email string) (signedToken string, signedRefreshToken str
 	return token, refreshToken, err
 }
 
-//ValidateToken validates the jwt token
+// ValidateToken validates the jwt token
 func ValidateToken(signedToken string) (claims *SignedDetails, msg string) {
 	token, err := jwt.ParseWithClaims(
 		signedToken,
@@ -69,13 +69,13 @@ func ValidateToken(signedToken string) (claims *SignedDetails, msg string) {
 
 	claims, ok := token.Claims.(*SignedDetails)
 	if !ok {
-		msg = fmt.Sprintf("the token is invalid")
+		msg = fmt.Sprintf("invalid token")
 		msg = err.Error()
 		return
 	}
 
 	if claims.ExpiresAt < time.Now().Local().Unix() {
-		msg = fmt.Sprintf("token is expired")
+		msg = fmt.Sprintf("expired token")
 		msg = err.Error()
 		return
 	}
@@ -83,7 +83,7 @@ func ValidateToken(signedToken string) (claims *SignedDetails, msg string) {
 	return claims, msg
 }
 
-//UpdateAllTokens renews the user tokens when they login
+// UpdateAllTokens renews the user tokens when they login
 func UpdateAllTokens(signedToken string, signedRefreshToken string, email string) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 
