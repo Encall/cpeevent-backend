@@ -14,8 +14,8 @@ func UserRoutes(route *gin.RouterGroup) {
 		c.JSON(http.StatusOK, gin.H{"message": "Hello World"})
 	})
 
-	route.POST("/users/signup", controllers.SignUp())
-	route.POST("/users/login", controllers.Login())
+	route.POST("/user/signup", controllers.SignUp())
+	route.POST("/user/login", controllers.Login())
 	route.GET("/events", controllers.GetEvents())
 	route.GET("/searchEvents", controllers.SearchEvents()) //usage: /searchEvents?name=XXXXXX
 

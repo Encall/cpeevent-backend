@@ -23,6 +23,11 @@ import (
 var userCollection *mongo.Collection = database.OpenCollection(database.Client, "users")
 var validate = validator.New()
 
+type LoginRequest struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
+}
+
 // HashPassword is used to encrypt the password
 func HashPassword(password string) string {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
@@ -40,7 +45,7 @@ func VerifyPassword(userPassword string, providedPassword string) (bool, string)
 	msg := ""
 
 	if err != nil {
-		msg = "Login or Passowrd is incorrect"
+		msg = "Login or Password is incorrect"
 		check = false
 	}
 
@@ -119,40 +124,38 @@ func SignUp() gin.HandlerFunc {
 func Login() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-		var user models.User
-		var foundUser models.User
 		defer cancel()
 
-		if err := c.BindJSON(&user); err != nil {
+		var loginRequest LoginRequest
+		if err := c.ShouldBindJSON(&loginRequest); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		log.Println("Incoming JSON payload for Login:", user)
+		log.Println("Incoming JSON payload for Login:", loginRequest)
 
-		err := userCollection.FindOne(ctx, bson.M{"email": user.Email}).Decode(&foundUser)
-		defer cancel()
+		var foundUser models.User
+		err := userCollection.FindOne(ctx, bson.M{"email": loginRequest.Email}).Decode(&foundUser)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "login or passowrd is incorrect"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Login or Password is incorrect"})
 			return
 		}
 
-		passwordIsValid, msg := VerifyPassword(user.Password, foundUser.Password)
-		defer cancel()
-		if passwordIsValid != true {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+		passwordIsValid, msg := VerifyPassword(loginRequest.Password, foundUser.Password)
+		if !passwordIsValid {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": msg})
 			return
 		}
 
 		if foundUser.Email == "" {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "user not found"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
 			return
 		}
+
 		token, refreshToken, _ := helper.GenerateAllTokens(foundUser.Email)
-
 		helper.UpdateAllTokens(token, refreshToken, foundUser.Email)
-		err = userCollection.FindOne(ctx, bson.M{"email": foundUser.Email}).Decode(&foundUser)
 
+		err = userCollection.FindOne(ctx, bson.M{"email": foundUser.Email}).Decode(&foundUser)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -162,6 +165,5 @@ func Login() gin.HandlerFunc {
 			"token":         foundUser.Token,
 			"refresh_token": foundUser.Refresh_token},
 			"message": "return successfully"})
-
 	}
 }
