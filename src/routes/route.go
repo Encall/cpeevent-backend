@@ -14,10 +14,15 @@ func UserRoutes(route *gin.RouterGroup) {
 		c.JSON(http.StatusOK, gin.H{"message": "Hello World"})
 	})
 
-	route.POST("/users/signup", controllers.SignUp())
-	route.POST("/users/login", controllers.Login())
 	route.GET("/events", controllers.GetEvents())
 	route.GET("/searchEvents", controllers.SearchEvents()) //usage: /searchEvents?name=XXXXXX
+
+	// Group routes for user related operations
+	userRoute := route.Group("/user")
+	userRoute.POST("/signup", controllers.SignUp())
+	userRoute.POST("/login", controllers.Login())
+	userRoute.POST("/logout", controllers.Logout())
+	userRoute.POST("/refresh", controllers.RefreshToken())
 
 	// Group routes that require authentication
 	protected := route.Group("/")

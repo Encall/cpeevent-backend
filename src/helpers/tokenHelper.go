@@ -18,7 +18,8 @@ import (
 
 // SignedDetails
 type SignedDetails struct {
-	Email string
+	Email  string
+	Access int
 	jwt.StandardClaims
 }
 
@@ -27,11 +28,12 @@ var userCollection *mongo.Collection = database.OpenCollection(database.Client, 
 var SECRET_KEY string = os.Getenv("SECRET_KEY")
 
 // GenerateAllTokens generates both teh detailed token and refresh token
-func GenerateAllTokens(email string) (signedToken string, signedRefreshToken string, err error) {
+func GenerateAllTokens(email string, access int) (signedToken string, signedRefreshToken string, err error) {
 	claims := &SignedDetails{
-		Email: email,
+		Email:  email,
+		Access: access,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Local().Add(time.Hour * time.Duration(24)).Unix(),
+			ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(15)).Unix(),
 		},
 	}
 
