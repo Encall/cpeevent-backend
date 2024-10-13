@@ -21,6 +21,7 @@ func UserRoutes(route *gin.RouterGroup) {
 	userRoute := route.Group("/user")
 	userRoute.POST("/signup", controllers.SignUp())
 	userRoute.POST("/login", controllers.Login())
+	userRoute.POST("/logout", controllers.Logout())
 	userRoute.POST("/refresh", controllers.RefreshToken())
 
 	// Group routes that require authentication

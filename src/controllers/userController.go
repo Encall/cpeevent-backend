@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -25,7 +26,7 @@ var userCollection *mongo.Collection = database.OpenCollection(database.Client, 
 var validate = validator.New()
 
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
+	Email    string `json:"email" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 
@@ -166,9 +167,56 @@ func Login() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"success": true, "data": gin.H{
+			"user":          foundUser.Email,
+			"access":        foundUser.Access,
 			"token":         foundUser.Token,
 			"refresh_token": foundUser.Refresh_token},
 			"message": "return successfully"})
+	}
+}
+
+func Logout() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		accessToken := c.GetHeader("Authorization")
+		log.Println("accessToken:", accessToken)
+		if accessToken == "" || !strings.HasPrefix(accessToken, "Bearer ") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "No access token provided"})
+			return
+		}
+		token := strings.TrimPrefix(accessToken, "Bearer ")
+		if token == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "No access token provided"})
+			return
+		}
+
+		claims, msg := helper.ValidateToken(token)
+		if msg != "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": msg})
+			return
+		}
+
+		updateObj := bson.D{
+			{"token", ""},
+			{"refresh_token", ""},
+		}
+
+		_, err := userCollection.UpdateOne(
+			ctx,
+			bson.M{"email": claims.Email},
+			bson.D{
+				{"$set", updateObj},
+			},
+		)
+		if err != nil {
+			log.Panic(err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error logging out"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 	}
 }
 
