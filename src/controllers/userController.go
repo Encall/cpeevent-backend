@@ -67,7 +67,13 @@ func SignUp() gin.HandlerFunc {
 			return
 		}
 
-		count, err := userCollection.CountDocuments(ctx, bson.M{"email": user.Email})
+		count, err := userCollection.CountDocuments(ctx, bson.M{
+			"$or": []bson.M{
+				{"email": user.Email},
+				{"studentID": user.StudentID},
+			},
+		})
+
 		defer cancel()
 		if err != nil {
 			log.Panic(err)
@@ -81,8 +87,8 @@ func SignUp() gin.HandlerFunc {
 		user.Password = password
 
 		if count > 0 {
-			c.JSON(http.StatusInternalServerError,
-				gin.H{"success": false, "data": nil, "message": "email ready exists"})
+			c.JSON(http.StatusConflict,
+				gin.H{"success": false, "data": nil, "message": "email or studentid ready exists"})
 
 			return
 		}
