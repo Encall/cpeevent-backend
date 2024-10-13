@@ -2,8 +2,10 @@ package main
 
 import (
 	"os"
+	"time"
 
 	"github.com/encall/cpeevent-backend/src/routes"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,6 +27,18 @@ func main() {
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
+
+	origin := os.Getenv("ORIGIN_URL")
+	// CORS configuration
+	config := cors.Config{
+		AllowOrigins:     []string{origin},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowHeaders:     []string{"Origin", "Content-Type"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}
+	r.Use(cors.New(config))
 
 	// Register all routes with /api prefix
 	api := r.Group("/api")
