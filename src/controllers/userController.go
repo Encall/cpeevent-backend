@@ -26,8 +26,8 @@ var userCollection *mongo.Collection = database.OpenCollection(database.Client, 
 var validate = validator.New()
 
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	StudentID string `json:"studentID" binding:"required"`
+	Password  string `json:"password" binding:"required"`
 }
 
 // HashPassword is used to encrypt the password
@@ -75,10 +75,7 @@ func SignUp() gin.HandlerFunc {
 		}
 
 		count, err := userCollection.CountDocuments(ctx, bson.M{
-			"$or": []bson.M{
-				{"email": user.Email},
-				{"studentID": user.StudentID},
-			},
+			"studentid": user.StudentID,
 		})
 
 		defer cancel()
@@ -98,7 +95,7 @@ func SignUp() gin.HandlerFunc {
 
 		if count > 0 {
 			c.JSON(http.StatusConflict,
-				gin.H{"success": false, "data": nil, "message": "email or studentid ready exists"})
+				gin.H{"success": false, "data": nil, "message": "studentID already existed"})
 
 			return
 		}
@@ -106,7 +103,7 @@ func SignUp() gin.HandlerFunc {
 		user.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 		user.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
-		token, refreshToken, _ := helper.GenerateAllTokens(user.Email, user.Access)
+		token, refreshToken, _ := helper.GenerateAllTokens(user.StudentID, user.Access)
 		user.Token = &token
 		user.Refresh_token = &refreshToken
 
@@ -140,9 +137,9 @@ func Login() gin.HandlerFunc {
 		log.Println("Incoming JSON payload for Login:", loginRequest)
 
 		var foundUser models.User
-		err := userCollection.FindOne(ctx, bson.M{"email": loginRequest.Email}).Decode(&foundUser)
+		err := userCollection.FindOne(ctx, bson.M{"studentid": loginRequest.StudentID}).Decode(&foundUser)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Login or Password is incorrect"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Student ID or Password is incorrect"})
 			return
 		}
 
@@ -152,22 +149,22 @@ func Login() gin.HandlerFunc {
 			return
 		}
 
-		if foundUser.Email == "" {
+		if foundUser.StudentID == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
 			return
 		}
 
-		token, refreshToken, _ := helper.GenerateAllTokens(foundUser.Email, foundUser.Access)
-		helper.UpdateAllTokens(token, refreshToken, foundUser.Email)
+		token, refreshToken, _ := helper.GenerateAllTokens(foundUser.StudentID, foundUser.Access)
+		helper.UpdateAllTokens(token, refreshToken, foundUser.StudentID)
 
-		err = userCollection.FindOne(ctx, bson.M{"email": foundUser.Email}).Decode(&foundUser)
+		err = userCollection.FindOne(ctx, bson.M{"studentid": foundUser.StudentID}).Decode(&foundUser)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
 		c.JSON(http.StatusOK, gin.H{"success": true, "data": gin.H{
-			"user":          foundUser.Email,
+			"user":          foundUser.StudentID,
 			"access":        foundUser.Access,
 			"token":         foundUser.Token,
 			"refresh_token": foundUser.Refresh_token},
@@ -205,7 +202,7 @@ func Logout() gin.HandlerFunc {
 
 		_, err := userCollection.UpdateOne(
 			ctx,
-			bson.M{"email": claims.Email},
+			bson.M{"studentid": claims.StudentID},
 			bson.D{
 				{"$set", updateObj},
 			},
@@ -250,13 +247,13 @@ func RefreshToken() gin.HandlerFunc {
 		}
 
 		var user models.User
-		err := userCollection.FindOne(ctx, bson.M{"email": accessClaims.Email, "refresh_token": refreshToken}).Decode(&user)
+		err := userCollection.FindOne(ctx, bson.M{"studentid": accessClaims.StudentID, "refresh_token": refreshToken}).Decode(&user)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token"})
 			return
 		}
 
-		newToken, newRefreshToken, err := helper.GenerateAllTokens(accessClaims.Email, accessClaims.Access)
+		newToken, newRefreshToken, err := helper.GenerateAllTokens(accessClaims.StudentID, accessClaims.Access)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -274,7 +271,7 @@ func RefreshToken() gin.HandlerFunc {
 
 		_, err = userCollection.UpdateOne(
 			ctx,
-			bson.M{"email": accessClaims.Email},
+			bson.M{"studentid": accessClaims.StudentID},
 			bson.D{
 				{"$set", updateObj},
 			},

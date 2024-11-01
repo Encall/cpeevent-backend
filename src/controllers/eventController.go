@@ -66,3 +66,17 @@ func SearchEvents() gin.HandlerFunc{
 		c.JSON(http.StatusOK, gin.H{"success": true, "data": events})
 	}
 }
+
+
+func TestEvents() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, exists := c.Get("studentid")
+		if !exists {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "User ID not found in context"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"userID": userID})
+	}
+}
+

@@ -18,8 +18,8 @@ import (
 
 // SignedDetails
 type SignedDetails struct {
-	Email  string
-	Access int
+	StudentID string
+	Access    int
 	jwt.StandardClaims
 }
 
@@ -28,10 +28,10 @@ var userCollection *mongo.Collection = database.OpenCollection(database.Client, 
 var SECRET_KEY string = os.Getenv("SECRET_KEY")
 
 // GenerateAllTokens generates both teh detailed token and refresh token
-func GenerateAllTokens(email string, access int) (signedToken string, signedRefreshToken string, err error) {
+func GenerateAllTokens(studentID string, access int) (signedToken string, signedRefreshToken string, err error) {
 	claims := &SignedDetails{
-		Email:  email,
-		Access: access,
+		StudentID: studentID,
+		Access:    access,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(15)).Unix(),
 		},
@@ -86,7 +86,7 @@ func ValidateToken(signedToken string) (claims *SignedDetails, msg string) {
 }
 
 // UpdateAllTokens renews the user tokens when they login
-func UpdateAllTokens(signedToken string, signedRefreshToken string, email string) {
+func UpdateAllTokens(signedToken string, signedRefreshToken string, studentID string) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 
 	var updateObj primitive.D
@@ -98,7 +98,7 @@ func UpdateAllTokens(signedToken string, signedRefreshToken string, email string
 	updateObj = append(updateObj, bson.E{"updated_at", Updated_at})
 
 	upsert := true
-	filter := bson.M{"email": email}
+	filter := bson.M{"studentid": studentID}
 	opt := options.UpdateOptions{
 		Upsert: &upsert,
 	}
