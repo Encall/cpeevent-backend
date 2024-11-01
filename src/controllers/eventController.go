@@ -67,6 +67,7 @@ func SearchEvents() gin.HandlerFunc{
 	}
 }
 
+
 func TestEvents() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID, exists := c.Get("studentid")
@@ -78,3 +79,4 @@ func TestEvents() gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"userID": userID})
 	}
 }
+
