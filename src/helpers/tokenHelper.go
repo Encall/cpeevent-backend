@@ -19,7 +19,7 @@ import (
 // SignedDetails
 type SignedDetails struct {
 	StudentID string
-	Access int
+	Access    int
 	jwt.StandardClaims
 }
 
@@ -31,7 +31,7 @@ var SECRET_KEY string = os.Getenv("SECRET_KEY")
 func GenerateAllTokens(studentID string, access int) (signedToken string, signedRefreshToken string, err error) {
 	claims := &SignedDetails{
 		StudentID: studentID,
-		Access: access,
+		Access:    access,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Local().Add(time.Minute * time.Duration(15)).Unix(),
 		},
@@ -98,7 +98,7 @@ func UpdateAllTokens(signedToken string, signedRefreshToken string, studentID st
 	updateObj = append(updateObj, bson.E{"updated_at", Updated_at})
 
 	upsert := true
-	filter := bson.M{"studentID": studentID}
+	filter := bson.M{"studentid": studentID}
 	opt := options.UpdateOptions{
 		Upsert: &upsert,
 	}

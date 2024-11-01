@@ -27,7 +27,7 @@ var validate = validator.New()
 
 type LoginRequest struct {
 	StudentID string `json:"studentID" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Password  string `json:"password" binding:"required"`
 }
 
 // HashPassword is used to encrypt the password
@@ -75,8 +75,8 @@ func SignUp() gin.HandlerFunc {
 		}
 
 		count, err := userCollection.CountDocuments(ctx, bson.M{
-				"studentid": user.StudentID,
-			})
+			"studentid": user.StudentID,
+		})
 
 		defer cancel()
 		if err != nil {
@@ -202,7 +202,7 @@ func Logout() gin.HandlerFunc {
 
 		_, err := userCollection.UpdateOne(
 			ctx,
-			bson.M{"studentID": claims.StudentID},
+			bson.M{"studentid": claims.StudentID},
 			bson.D{
 				{"$set", updateObj},
 			},
@@ -247,7 +247,7 @@ func RefreshToken() gin.HandlerFunc {
 		}
 
 		var user models.User
-		err := userCollection.FindOne(ctx, bson.M{"studentID": accessClaims.StudentID, "refresh_token": refreshToken}).Decode(&user)
+		err := userCollection.FindOne(ctx, bson.M{"studentid": accessClaims.StudentID, "refresh_token": refreshToken}).Decode(&user)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token"})
 			return
@@ -271,7 +271,7 @@ func RefreshToken() gin.HandlerFunc {
 
 		_, err = userCollection.UpdateOne(
 			ctx,
-			bson.M{"email": accessClaims.StudentID},
+			bson.M{"studentid": accessClaims.StudentID},
 			bson.D{
 				{"$set", updateObj},
 			},
