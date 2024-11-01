@@ -29,7 +29,7 @@ func Authentication(requiredAccessLevel int) gin.HandlerFunc {
 			return
 		}
 
-		c.Set("email", claims.Email)
+		c.Set("studentid", claims.StudentID)
 		c.Set("access", claims.Access)
 
 		// Check if the user has the required access level
