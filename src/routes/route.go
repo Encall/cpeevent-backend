@@ -18,7 +18,7 @@ func UserRoutes(route *gin.RouterGroup) {
 
 	v1.GET("/events", controllers.GetEvents())
 	v1.GET("/searchEvents", controllers.SearchEvents()) //usage: /searchEvents?name=XXXXXX
-	v1.GET("/event/:eventID/posts", controllers.GetPostFromEvent())
+	// v1.GET("/event/:eventID/posts", controllers.GetPostFromEvent())
 
 	// Group routes for user related operations
 	userRoute := v1.Group("/user")
