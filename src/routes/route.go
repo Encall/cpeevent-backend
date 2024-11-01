@@ -33,6 +33,7 @@ func UserRoutes(route *gin.RouterGroup) {
 		protected.GET("/protected-route", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"message": "This is a protected route"})
 		})
+		protected.GET("/testevent", controllers.TestEvents())
 	}
 
 	protected.Use(middleware.Authentication(2)) // Example: Access level 2 required
