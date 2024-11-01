@@ -18,6 +18,7 @@ func UserRoutes(route *gin.RouterGroup) {
 
 	v1.GET("/events", controllers.GetEvents())
 	v1.GET("/searchEvents", controllers.SearchEvents()) //usage: /searchEvents?name=XXXXXX
+	v1.GET("/event/:eventID/posts", controllers.GetPostFromEvent())
 
 	// Group routes for user related operations
 	userRoute := v1.Group("/user")
@@ -33,6 +34,7 @@ func UserRoutes(route *gin.RouterGroup) {
 		protected.GET("/protected-route", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"message": "This is a protected route"})
 		})
+		// protected.GET("")
 	}
 
 	protected.Use(middleware.Authentication(2)) // Example: Access level 2 required
