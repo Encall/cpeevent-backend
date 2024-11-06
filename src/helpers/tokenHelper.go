@@ -64,11 +64,6 @@ func ValidateToken(signedToken string) (claims *SignedDetails, msg string) {
 		},
 	)
 
-	if err != nil {
-		msg = err.Error()
-		return
-	}
-
 	claims, ok := token.Claims.(*SignedDetails)
 	if !ok {
 		msg = fmt.Sprintf("invalid token")
@@ -78,6 +73,11 @@ func ValidateToken(signedToken string) (claims *SignedDetails, msg string) {
 
 	if claims.ExpiresAt < time.Now().Local().Unix() {
 		msg = fmt.Sprintf("expired token")
+		msg = err.Error()
+		return
+	}
+
+	if err != nil {
 		msg = err.Error()
 		return
 	}

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -34,7 +35,7 @@ func Authentication(requiredAccessLevel int) gin.HandlerFunc {
 
 		claims, msg := helper.ValidateToken(clientToken)
 		if msg != "" {
-			if msg == "expired token" {
+			if strings.Contains(msg, "token is expired") {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": msg})
 			} else {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": msg})

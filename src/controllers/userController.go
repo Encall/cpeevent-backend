@@ -232,7 +232,7 @@ func RefreshToken() gin.HandlerFunc {
 		}
 
 		accessClaims, msg := helper.ValidateToken(accessToken)
-		if msg != "" {
+		if accessClaims == nil || msg == "" || !strings.Contains(msg, "token is expired") {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": msg})
 			return
 		}
