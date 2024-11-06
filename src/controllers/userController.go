@@ -117,8 +117,11 @@ func SignUp() gin.HandlerFunc {
 				gin.H{"success": false, "data": nil, "message": msg})
 			return
 		}
-
-		c.JSON(http.StatusOK, gin.H{"success": true, "data": result.InsertedID, "message": "user signup success"})
+		c.JSON(http.StatusOK, gin.H{"success": true, "data": gin.H{
+			"user":          user.StudentID,
+			"access":        user.Access,
+			"token":         user.Token,
+			"refresh_token": user.Refresh_token}, "message": "user signup success"})
 	}
 }
 
