@@ -27,7 +27,6 @@ func UserRoutes(route *gin.RouterGroup) {
 	userRoute.POST("/logout", controllers.Logout())
 	userRoute.POST("/refresh", controllers.RefreshToken())
 
-
 	// Group routes that require authentication
 	protected := v1.Group("/")
 	protected.Use(middleware.Authentication(1)) // Example: Access level 1 required
@@ -39,8 +38,8 @@ func UserRoutes(route *gin.RouterGroup) {
 		protected.GET("/event/:eventID/posts", controllers.GetPostFromEvent())
 
 		profile := protected.Group("/account")
-		profile.GET("/info", controllers.GetInfo())
-		profile.POST("/update", controllers.UpdateInfo())
+		profile.GET("", controllers.GetInfo())
+		profile.PATCH("", controllers.UpdateInfo())
 	}
 
 	protected.Use(middleware.Authentication(2)) // Example: Access level 2 required
