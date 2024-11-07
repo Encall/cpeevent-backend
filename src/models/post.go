@@ -13,16 +13,16 @@ type Question struct {
 
 // Post represents a general post.
 type Post struct {
-	ID          primitive.ObjectID `bson:"_id" json:"_id"`
-	Kind        string             `bson:"kind" json:"kind"`
-	AssignTo    string             `bson:"assignTo" json:"assignTo"`
-	Title       string             `bson:"title" json:"title"`
-	Description string             `bson:"description" json:"description"`
-	PostDate    primitive.DateTime `bson:"postDate" json:"postDate"`
+	ID          primitive.ObjectID  `bson:"_id" json:"_id"`
+	Kind        string              `bson:"kind" json:"kind"`
+	AssignTo    []string            `bson:"assignTo" json:"assignTo"`
+	Title       string              `bson:"title" json:"title"`
+	Description string              `bson:"description" json:"description"`
+	PostDate    primitive.DateTime  `bson:"postDate" json:"postDate"`
 	EndDate     *primitive.DateTime `bson:"endDate,omitempty" json:"endDate,omitempty"` // Nullable
-	Author      string             `bson:"author" json:"author"`
-	Mardown     string             `bson:"mardown" json:"mardown"` // Correct the spelling here
-	Questions    []Question        `bson:"questions,omitempty" json:"questions,omitempty"` // For vote posts
+	Author      string              `bson:"author" json:"author"`
+	Mardown     string              `bson:"mardown" json:"mardown"`                         // Correct the spelling here
+	Questions   []Question          `bson:"questions,omitempty" json:"questions,omitempty"` // For vote posts
 }
 
 // PPost extends Post for regular posts.
