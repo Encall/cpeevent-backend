@@ -225,15 +225,13 @@ func RefreshToken() gin.HandlerFunc {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
 
-		accessToken := c.Request.Header.Get("token")
-		if accessToken == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "No access token provided"})
-			return
+		type RefreshTokenRequest struct {
+			UserID string `json:"userID" binding:"required"`
 		}
 
-		accessClaims, msg := helper.ValidateToken(accessToken)
-		if accessClaims == nil || msg == "" || !strings.Contains(msg, "token is expired") {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": msg})
+		var refreshTokenRequest RefreshTokenRequest
+		if err := c.BindJSON(&refreshTokenRequest); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
@@ -243,45 +241,48 @@ func RefreshToken() gin.HandlerFunc {
 			return
 		}
 
-		_, msg = helper.ValidateToken(refreshToken)
+		// Validate the refresh token
+		_, msg := helper.ValidateToken(refreshToken)
 		if msg != "" {
+			log.Println("Error validating refresh token:", msg)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": msg})
 			return
 		}
 
+		// Find the user associated with the refresh token
 		var user models.User
-		err := userCollection.FindOne(ctx, bson.M{"studentid": accessClaims.StudentID, "refresh_token": refreshToken}).Decode(&user)
+		err := userCollection.FindOne(ctx, bson.M{"studentid": refreshTokenRequest.UserID, "refresh_token": refreshToken}).Decode(&user)
 		if err != nil {
+			log.Println("Error querying db", msg)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token"})
 			return
 		}
 
-		newToken, newRefreshToken, err := helper.GenerateAllTokens(accessClaims.StudentID, accessClaims.Access)
+		// Generate new tokens
+		newToken, newRefreshToken, err := helper.GenerateAllTokens(user.StudentID, user.Access)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
+		// Update the tokens in the database
 		updateObj := bson.D{
 			{"token", newToken},
 			{"refresh_token", newRefreshToken},
 		}
-
 		upsert := true
 		opt := options.UpdateOptions{
 			Upsert: &upsert,
 		}
-
 		_, err = userCollection.UpdateOne(
 			ctx,
-			bson.M{"studentid": accessClaims.StudentID},
+			bson.M{"studentid": user.StudentID},
 			bson.D{
 				{"$set", updateObj},
 			},
 			&opt,
 		)
 		if err != nil {
-			log.Panic(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error updating tokens"})
 			return
 		}
@@ -289,6 +290,6 @@ func RefreshToken() gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"success": true, "data": gin.H{
 			"token":         newToken,
 			"refresh_token": newRefreshToken},
-			"message": "return successfully"})
+			"message": "Tokens refreshed successfully"})
 	}
 }

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log"
 	"net/http"
 	"strings"
 
@@ -36,12 +37,16 @@ func Authentication(requiredAccessLevel int) gin.HandlerFunc {
 		claims, msg := helper.ValidateToken(clientToken)
 		if msg != "" {
 			if strings.Contains(msg, "token is expired") {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": msg})
+				log.Println("Token is expired")
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Token is expired"})
+				c.Abort()
+				return
 			} else {
+				log.Println(msg)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+				c.Abort()
+				return
 			}
-			c.Abort()
-			return
 		}
 
 		c.Set("studentid", claims.StudentID)
@@ -53,7 +58,6 @@ func Authentication(requiredAccessLevel int) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-
 		c.Next()
 	}
 }
