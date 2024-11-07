@@ -40,6 +40,7 @@ func UserRoutes(route *gin.RouterGroup) {
 
 		profile := protected.Group("/account")
 		profile.GET("/info", controllers.GetInfo())
+		profile.POST("/update", controllers.UpdateInfo())
 	}
 
 	protected.Use(middleware.Authentication(2)) // Example: Access level 2 required
