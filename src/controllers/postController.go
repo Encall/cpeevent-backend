@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -25,6 +26,8 @@ func NewPost(post models.Post) interface{} {
 	case "vote":
 		// Create and return a PVote with questions
 		return models.PVote{Post: post, Questions: post.Questions}
+	case "form":
+		return models.PForm{Post: post, Questions: post.Questions}
 	default:
 		// Handle unknown post kinds, return nil or an error if needed
 		return nil
@@ -66,10 +69,16 @@ func GetPostFromEvent() gin.HandlerFunc {
 		}
 		defer cursor.Close(ctx)
 
+		
+
 		// Decode all the posts from the cursor
 		if err = cursor.All(ctx, &posts); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error decoding posts"})
 			return
+		}
+
+		for index, post := range posts {
+			fmt.Printf("%d: %v\n", index, post)
 		}
 
 		// Create a slice to hold specific post types
