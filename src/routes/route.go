@@ -36,6 +36,7 @@ func UserRoutes(route *gin.RouterGroup) {
 		})
 		protected.GET("/testevent", controllers.TestEvents())
 		protected.GET("/event/:eventID/posts", controllers.GetPostFromEvent())
+		protected.PATCH("/event/join", controllers.JoinEvent())
 		protected.GET("posts/:postID", controllers.GetPostFromPostId())
 	}
 
