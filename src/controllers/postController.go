@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -69,16 +68,10 @@ func GetPostFromEvent() gin.HandlerFunc {
 		}
 		defer cursor.Close(ctx)
 
-		
-
 		// Decode all the posts from the cursor
 		if err = cursor.All(ctx, &posts); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error decoding posts"})
 			return
-		}
-
-		for index, post := range posts {
-			fmt.Printf("%d: %v\n", index, post)
 		}
 
 		// Create a slice to hold specific post types
