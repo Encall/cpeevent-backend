@@ -36,6 +36,7 @@ func UserRoutes(route *gin.RouterGroup) {
 		})
 		protected.GET("/testevent", controllers.TestEvents())
 		protected.GET("/event/:eventID/posts", controllers.GetPostFromEvent())
+		protected.GET("posts/:postID", controllers.GetPostFromPostId())
 	}
 
 	protected.Use(middleware.Authentication(2)) // Example: Access level 2 required
