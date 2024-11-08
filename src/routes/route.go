@@ -42,6 +42,10 @@ func UserRoutes(route *gin.RouterGroup) {
 		profile.PATCH("", controllers.UpdateInfo())
 		profile.GET("/profile", controllers.GetUsername())
 		profile.POST("/profile", controllers.UpdateUsername())
+
+		protected.PATCH("/event/join", controllers.JoinEvent())
+		protected.GET("posts/:postID", controllers.GetPostFromPostId())
+
 	}
 
 	protected.Use(middleware.Authentication(2)) // Example: Access level 2 required

@@ -21,7 +21,7 @@ type Post struct {
 	PostDate    primitive.DateTime  `bson:"postDate" json:"postDate"`
 	EndDate     *primitive.DateTime `bson:"endDate,omitempty" json:"endDate,omitempty"` // Nullable
 	Author      string              `bson:"author" json:"author"`
-	Mardown     string              `bson:"mardown" json:"mardown"`                         // Correct the spelling here
+	Markdown    string              `bson:"markdown" json:"markdown"`                       // Correct the spelling here
 	Questions   []Question          `bson:"questions,omitempty" json:"questions,omitempty"` // For vote posts
 }
 
@@ -34,4 +34,9 @@ type PPost struct {
 type PVote struct {
 	Post
 	Questions []Question `bson:"questions" json:"questions"` // Include questions for vote posts
+}
+
+type PForm struct{
+	Post
+	Questions []Question `bson:"questions" json:"question"`
 }

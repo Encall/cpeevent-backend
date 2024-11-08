@@ -25,12 +25,13 @@ func NewPost(post models.Post) interface{} {
 	case "vote":
 		// Create and return a PVote with questions
 		return models.PVote{Post: post, Questions: post.Questions}
+	case "form":
+		return models.PForm{Post: post, Questions: post.Questions}
 	default:
 		// Handle unknown post kinds, return nil or an error if needed
 		return nil
 	}
 }
-
 
 func GetPostFromEvent() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -87,5 +88,44 @@ func GetPostFromEvent() gin.HandlerFunc {
 
 		// Respond with the specific posts data
 		c.JSON(http.StatusOK, gin.H{"success": true, "data": specificPosts})
+	}
+}
+
+func GetPostFromPostId() gin.HandlerFunc {
+
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel() // Ensure cancel is called to release resources
+
+		// Get the postID from the URL parameters
+		postID := c.Param("postID")
+		if postID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "postID is required"})
+			return
+		}
+
+		// Parse postID as an ObjectID
+		objectID, err := primitive.ObjectIDFromHex(postID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid postID format"})
+			return
+		}
+
+		// Query the post by its ID
+		var post models.Post
+		if err := postCollection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&post); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Post not found"})
+			return
+		}
+
+		// Convert the post to its specific type based on the Kind
+		specificPost := NewPost(post)
+		if specificPost == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unknown post kind"})
+			return
+		}
+
+		// Respond with the specific post data
+		c.JSON(http.StatusOK, gin.H{"success": true, "data": specificPost})
 	}
 }
