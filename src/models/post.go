@@ -6,9 +6,9 @@ import (
 
 // Question represents a question in a vote post.
 type Question struct {
-	Question string   `bson:"question" json:"question"`
-	Type     string   `bson:"type" json:"type"`
-	Options  []string `bson:"options" json:"options"`
+	Question  string   `bson:"question" json:"question"`
+	InputType string   `bson:"inputType" json:"inputType"`
+	Options   []string `bson:"options" json:"options"`
 }
 
 // Post represents a general post.
@@ -36,7 +36,7 @@ type PVote struct {
 	Questions []Question `bson:"questions" json:"questions"` // Include questions for vote posts
 }
 
-type PForm struct{
+type PForm struct {
 	Post
-	Questions []Question `bson:"questions" json:"question"`
+	Questions []Question `bson:"questions" json:"questions"`
 }
