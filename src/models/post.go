@@ -35,3 +35,8 @@ type PVote struct {
 	Post
 	Questions []Question `bson:"questions" json:"questions"` // Include questions for vote posts
 }
+
+type PForm struct{
+	Post
+	Questions []Question `bson:"questions" json:"question"`
+}
