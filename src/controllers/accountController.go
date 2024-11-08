@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	models "github.com/encall/cpeevent-backend/src/models"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // var userCollection *mongo.Collection = database.OpenCollection(database.Client, "users")
@@ -31,11 +31,19 @@ func GetInfo() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "User ID not found in context"})
 			return
 		}
-		var info models.User
+		var info UpdateAccountInfo
+
+		projection := bson.M{
+			"firstname": 1,
+			"lastname": 1,
+			"year": 1,
+			"email": 1,
+			"phonenumber": 1,
+		}
 
 		// err := userCollection.FindOne(ctx, bson.M{"studentid": userID}).Decode(&foundUser)
 
-		err := userCollection.FindOne(ctx, bson.M{"studentid": userID}).Decode(&info)
+		err := userCollection.FindOne(ctx, bson.M{"studentid": userID}, options.FindOne().SetProjection(projection)).Decode(&info)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -66,11 +74,11 @@ func UpdateInfo() gin.HandlerFunc {
 		}
 
 		updateInfo := bson.M{
-			"firstName":   info.FirstName,
-			"lastName":    info.LastName,
+			"firstname":   info.FirstName,
+			"lastname":    info.LastName,
 			"year":        info.Year,
 			"email":       info.Email,
-			"phoneNumber": info.PhoneNumber,
+			"phonenumber": info.PhoneNumber,
 		}
 
 		result, err := userCollection.UpdateOne(ctx, bson.M{"studentid": userID}, bson.M{"$set": updateInfo})
