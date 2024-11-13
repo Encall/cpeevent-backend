@@ -13,7 +13,7 @@ services:
       - cpeevo_network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.app.rule=Host(`api.encall.live`)"
+      - "traefik.http.routers.app.rule=Host(`cpeevo-api.encall.live`)"
       - "traefik.http.routers.app.entrypoints=web"
 
   traefik:
