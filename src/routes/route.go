@@ -44,6 +44,7 @@ func UserRoutes(route *gin.RouterGroup) {
 		profile.POST("/profile", controllers.UpdateUsername())
 
 		protected.PATCH("/event/join", controllers.JoinEvent())
+		protected.PATCH("/event/leave", controllers.LeaveEvent())
 		protected.GET("posts/:postID", controllers.GetPostFromPostId())
 
 	}

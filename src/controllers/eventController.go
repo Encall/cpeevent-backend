@@ -172,3 +172,88 @@ func JoinEvent() gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"data": result, "message": "Joined event successfully"})
 	}
 }
+
+func LeaveEvent() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		userID, exists := c.Get("studentid")
+		if !exists {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "User ID not found in context"})
+			return
+		}
+
+		type LeaveRequest struct {
+			EventID string `json:"eventID" binding:"required"`
+		}
+
+		var leaveRequest LeaveRequest
+		if err := c.BindJSON(&leaveRequest); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		var event models.Event
+		eventID, err := primitive.ObjectIDFromHex(leaveRequest.EventID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid event ID"})
+			return
+		}
+
+		err = eventCollection.FindOne(ctx, bson.M{"_id": eventID}).Decode(&event)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Event not found"})
+			return
+		}
+
+		// Check if user is a staff member or participant
+		isStaff := false
+		isParticipant := false
+		for _, staffID := range event.Staff {
+			if staffID.StdID == userID {
+				isStaff = true
+				break
+			}
+		}
+		for _, participantID := range event.Participants {
+			if participantID == userID {
+				isParticipant = true
+				break
+			}
+		}
+
+		if !isStaff && !isParticipant {
+			c.JSON(http.StatusConflict, gin.H{"error": "User is not part of the event"})
+			return
+		}
+
+		update := bson.D{}
+		if isStaff {
+			update = bson.D{
+				{"$pull", bson.D{
+					{"staff", bson.D{{"stdID", userID}}},
+				}},
+			}
+		} else if isParticipant {
+			update = bson.D{
+				{"$pull", bson.D{
+					{"participants", userID},
+				}},
+			}
+		}
+
+		result, err := eventCollection.UpdateOne(ctx, bson.M{"_id": eventID}, update)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error leaving event"})
+			return
+		}
+
+		if result.ModifiedCount == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"message": "User not in event"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"data": result, "message": "Left event successfully"})
+	}
+}
