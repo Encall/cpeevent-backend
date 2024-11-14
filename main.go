@@ -10,6 +10,7 @@ import (
 )
 
 func main() {
+
 	mode := os.Getenv("GIN_MODE")
 	if mode == "" {
 		mode = "debug"
