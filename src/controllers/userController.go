@@ -75,7 +75,7 @@ func SignUp() gin.HandlerFunc {
 		}
 
 		count, err := userCollection.CountDocuments(ctx, bson.M{
-			"studentid": user.StudentID,
+			"studentID": user.StudentID,
 		})
 
 		defer cancel()
@@ -140,7 +140,7 @@ func Login() gin.HandlerFunc {
 		log.Println("Incoming JSON payload for Login:", loginRequest)
 
 		var foundUser models.User
-		err := userCollection.FindOne(ctx, bson.M{"studentid": loginRequest.StudentID}).Decode(&foundUser)
+		err := userCollection.FindOne(ctx, bson.M{"studentID": loginRequest.StudentID}).Decode(&foundUser)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Student ID or Password is incorrect"})
 			return
@@ -160,7 +160,7 @@ func Login() gin.HandlerFunc {
 		token, refreshToken, _ := helper.GenerateAllTokens(foundUser.StudentID, foundUser.Access)
 		helper.UpdateAllTokens(token, refreshToken, foundUser.StudentID)
 
-		err = userCollection.FindOne(ctx, bson.M{"studentid": foundUser.StudentID}).Decode(&foundUser)
+		err = userCollection.FindOne(ctx, bson.M{"studentID": foundUser.StudentID}).Decode(&foundUser)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -205,7 +205,7 @@ func Logout() gin.HandlerFunc {
 
 		_, err := userCollection.UpdateOne(
 			ctx,
-			bson.M{"studentid": claims.StudentID},
+			bson.M{"studentID": claims.StudentID},
 			bson.D{
 				{"$set", updateObj},
 			},
@@ -251,7 +251,7 @@ func RefreshToken() gin.HandlerFunc {
 
 		// Find the user associated with the refresh token
 		var user models.User
-		err := userCollection.FindOne(ctx, bson.M{"studentid": refreshTokenRequest.UserID, "refresh_token": refreshToken}).Decode(&user)
+		err := userCollection.FindOne(ctx, bson.M{"studentID": refreshTokenRequest.UserID, "refresh_token": refreshToken}).Decode(&user)
 		if err != nil {
 			log.Println("Error querying db", err)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token"})
@@ -276,7 +276,7 @@ func RefreshToken() gin.HandlerFunc {
 		}
 		_, err = userCollection.UpdateOne(
 			ctx,
-			bson.M{"studentid": user.StudentID},
+			bson.M{"studentID": user.StudentID},
 			bson.D{
 				{"$set", updateObj},
 			},

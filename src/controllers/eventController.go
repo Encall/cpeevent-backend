@@ -118,8 +118,8 @@ func JoinEvent() gin.HandlerFunc {
 		// Check if user is already a staff member or participant
 		isStaff := false
 		isParticipant := false
-		for _, staffID := range event.Staff {
-			if staffID == userID {
+		for _, staff := range event.Staff {
+			if staff.StdID == userID {
 				isStaff = true
 				break
 			}
@@ -136,15 +136,15 @@ func JoinEvent() gin.HandlerFunc {
 			return
 		}
 
-		var StaffMember models.StaffMember
+		var staffMember models.StaffMember
 
 		update := bson.D{}
 		if joinRequest.Role == "staff" {
-			StaffMember.StdID = userID.(string)
-			StaffMember.Role = ""
+			staffMember.StdID = userID.(string)
+			staffMember.Role = ""
 			update = bson.D{
 				{"$addToSet", bson.D{
-					{"staff", StaffMember},
+					{"staff", staffMember},
 				}},
 			}
 		} else if joinRequest.Role == "participant" {
@@ -210,8 +210,8 @@ func LeaveEvent() gin.HandlerFunc {
 		// Check if user is a staff member or participant
 		isStaff := false
 		isParticipant := false
-		for _, staffID := range event.Staff {
-			if staffID.StdID == userID {
+		for _, staff := range event.Staff {
+			if staff.StdID == userID {
 				isStaff = true
 				break
 			}
@@ -257,3 +257,115 @@ func LeaveEvent() gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"data": result, "message": "Left event successfully"})
 	}
 }
+
+func GetEventMembers() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		eventID := c.Param("eventID")
+		if eventID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "eventID is required"})
+			return
+		}
+
+		objectID, err := primitive.ObjectIDFromHex(eventID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid eventID format"})
+			return
+		}
+
+		pipeline := mongo.Pipeline{
+			{{"$match", bson.D{{"_id", objectID}}}},
+			{{"$lookup", bson.D{
+				{"from", "users"},
+				{"localField", "participants"},
+				{"foreignField", "studentID"},
+				{"as", "participantDetails"},
+			}}},
+			{{"$lookup", bson.D{
+				{"from", "users"},
+				{"localField", "staff.stdID"},
+				{"foreignField", "studentID"},
+				{"as", "staffDetails"},
+			}}},
+			{{"$project", bson.D{
+				{"eventID", "$_id"},
+				{"participants", bson.D{
+					{"$map", bson.D{
+						{"input", "$participantDetails"},
+						{"as", "participant"},
+						{"in", bson.D{
+							{"stdID", "$$participant.studentID"},
+							{"name", bson.D{{"$concat", []interface{}{"$$participant.firstName", " ", "$$participant.lastName"}}}},
+							{"phoneNumber", "$$participant.phoneNumber"},
+						}},
+					}},
+				}},
+				{"staff", bson.D{
+					{"$map", bson.D{
+						{"input", "$staffDetails"},
+						{"as", "staffMember"},
+						{"in", bson.D{
+							{"stdID", "$$staffMember.studentID"},
+							{"name", bson.D{{"$concat", []interface{}{"$$staffMember.firstName", " ", "$$staffMember.lastName"}}}},
+							{"phoneNumber", "$$staffMember.phoneNumber"},
+							{"role", bson.D{
+								{"$arrayElemAt", []interface{}{"$staff.role", bson.D{{"$indexOfArray", []interface{}{"$staff.stdID", "$$staffMember.studentID"}}}}},
+							}},
+						}},
+					}},
+				}},
+			}}},
+			{{"$addFields", bson.D{
+				{"participants", bson.D{
+					{"$filter", bson.D{
+						{"input", "$participants"},
+						{"as", "participant"},
+						{"cond", bson.D{{"$ne", bson.A{"$$participant.name", nil}}}},
+					}},
+				}},
+			}}},
+		}
+
+		cursor, err := eventCollection.Aggregate(ctx, pipeline)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "error fetching event members"})
+			return
+		}
+		defer cursor.Close(ctx)
+
+		var results []bson.M
+		if err = cursor.All(ctx, &results); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "error decoding event members"})
+			return
+		}
+
+		if len(results) == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, results[0])
+	}
+}
+
+/*
+Expeced Response:
+{
+eventID: eventid,
+participants: [
+0: {
+stdID: studentid,
+name: firstname lastname
+phoneNumber: phonenumber},
+]
+staff: [
+0: {
+stdID: studentid,
+name: firstname lastname
+phoneNumber: phonenumber,
+role: role}]
+
+}
+*/

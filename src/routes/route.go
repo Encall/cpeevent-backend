@@ -36,6 +36,7 @@ func UserRoutes(route *gin.RouterGroup) {
 		})
 		protected.GET("/testevent", controllers.TestEvents())
 		protected.GET("/event/:eventID/posts", controllers.GetPostFromEvent())
+		protected.GET("/event/:eventID/members", controllers.GetEventMembers())
 
 		profile := protected.Group("/account")
 		profile.GET("", controllers.GetInfo())
