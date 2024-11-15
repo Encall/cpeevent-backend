@@ -91,6 +91,64 @@ func GetPostFromEvent() gin.HandlerFunc {
 	}
 }
 
+// getpost as participant by check post that have boolean public = true
+func GetPostFromEventAsParticipant() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel() // Ensure cancel is called to release resources
+
+		// Get the eventID from the URL parameters
+		eventID := c.Param("eventID")
+		if eventID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "eventID is required"})
+			return
+		}
+
+		// Parse eventID as an ObjectID
+		objectID, err := primitive.ObjectIDFromHex(eventID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid eventID format"})
+			return
+		}
+
+		// Query the event by its ID
+		var event models.Event
+		if err := eventCollection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&event); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Event not found"})
+			return
+		}
+
+		// Query the posts collection with a single query using $in
+		var posts []models.Post
+		cursor, err := postCollection.Find(ctx, bson.M{"_id": bson.M{"$in": event.PostList}, "public": true})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving posts"})
+			return
+		}
+		defer cursor.Close(ctx)
+
+		// Decode all the posts from the cursor
+		if err = cursor.All(ctx, &posts); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error decoding posts"})
+			return
+		}
+
+		// Create a slice to hold specific post types
+		var specificPosts []interface{}
+
+		// Convert each post to its specific type based on the Kind
+		for _, post := range posts {
+			specificPost := NewPost(post) // Convert to specific type
+			if specificPost == nil {
+				continue // Or handle unknown kind if needed
+			}
+			specificPosts = append(specificPosts, specificPost)
+		}
+
+		// Respond with the specific posts data
+		c.JSON(http.StatusOK, gin.H{"success": true, "data": specificPosts})
+	}
+}
 func GetPostFromPostId() gin.HandlerFunc {
 
 	return func(c *gin.Context) {
