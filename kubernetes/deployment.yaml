@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cpeevo-backend
+  labels:
+    app: cpeevo-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: cpeevo-backend
+  template:
+    metadata:
+      labels:
+        app: cpeevo-backend
+    spec:
+      containers:
+      - name: cpeevo-backend
+        image: encalls/cpeevo-backend:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: MONGO_URI
+          valueFrom:
+            secretKeyRef:
+              name: cpeevo-secrets
+              key: MONGO_URI
+        - name: DATABASE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: cpeevo-config
+              key: DATABASE_NAME
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cpeevo-secrets
+              key: SECRET_KEY
+        - name: GIN_MODE
+          valueFrom:
+            configMapKeyRef:
+              name: cpeevo-config
+              key: GIN_MODE
+        - name: ORIGIN_URL
+          valueFrom:
+            configMapKeyRef:
+              name: cpeevo-config
+              key: ORIGIN_URL

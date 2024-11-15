@@ -35,3 +35,6 @@ tmp/
 
 # Ignore the .github directory
 .github/
+
+# Igonre kubernetes yaml files
+*.yaml
