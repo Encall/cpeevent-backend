@@ -5,6 +5,7 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/rewrite-target: /
+    kubernetes.io/ingress.class: nginx
 spec:
   tls:
   - hosts:
@@ -18,6 +19,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: letsencrypt-prod
+            name: cpeevo-backend
             port:
               number: 80

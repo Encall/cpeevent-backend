@@ -45,3 +45,14 @@ spec:
             configMapKeyRef:
               name: cpeevo-config
               key: ORIGIN_URL
+        livenessProbe:
+          httpGet:
+            path: /healthcheck
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /healthcheck
+            port: 8080
+          periodSeconds: 5
