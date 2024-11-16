@@ -30,3 +30,10 @@ alias air='$(go env GOPATH)/bin/air'
 ```
 
 Then you have to go to `localhost:8080`
+
+```
+kubectl apply -f kubernetes/configmap.yaml
+kubectl apply -f kubernetes/secret.yaml
+kubectl apply -f kubernetes/deployment.yaml
+kubectl apply -f kubernetes/service.yaml
+```
