@@ -8,6 +8,7 @@ import (
 type Question struct {
 	Question  string   `bson:"question" json:"question"`
 	InputType string   `bson:"inputType" json:"inputType"`
+	MaxSel    string   `bson:"maxSel" json:"maxSel"`
 	Options   []string `bson:"options" json:"options"`
 }
 
