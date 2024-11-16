@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -18,6 +19,32 @@ import (
 )
 
 var eventCollection *mongo.Collection = database.OpenCollection(database.Client, "events")
+
+func AddPostToPostList(postID primitive.ObjectID, eventID primitive.ObjectID) error {
+    var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+    defer cancel()
+
+    // Log the postID and eventID
+    log.Printf("Adding postID: %s to eventID: %s", postID.Hex(), eventID.Hex())
+
+    update := bson.D{
+        {"$addToSet", bson.D{
+            {"postList", postID},
+        }},
+    }
+
+    // Perform the update operation
+    result, err := eventCollection.UpdateOne(ctx, bson.M{"_id": eventID}, update)
+    if err != nil {
+    	log.Printf("Error updating event: %v", err)
+        return err
+    }
+
+    // Log the result of the update operation
+    log.Printf("MatchedCount: %d, ModifiedCount: %d", result.MatchedCount, result.ModifiedCount)
+
+    return nil
+}
 
 func GetEvents() gin.HandlerFunc {
 	return func(c *gin.Context) {
