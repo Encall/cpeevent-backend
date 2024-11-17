@@ -36,6 +36,7 @@ func UserRoutes(route *gin.RouterGroup) {
 		})
 		protected.GET("/testevent", controllers.TestEvents())
 		protected.GET("/event/:eventID/posts", controllers.GetPostFromEvent())
+		protected.GET("/event/:eventID/members", controllers.GetEventMembers())
 
 		profile := protected.Group("/account")
 		profile.GET("", controllers.GetInfo())
@@ -44,7 +45,9 @@ func UserRoutes(route *gin.RouterGroup) {
 		profile.POST("/profile", controllers.UpdateUsername())
 
 		protected.PATCH("/event/join", controllers.JoinEvent())
+		protected.PATCH("/event/leave", controllers.LeaveEvent())
 		protected.GET("posts/:postID", controllers.GetPostFromPostId())
+		protected.POST("/posts/create", controllers.CreateNewPost())
 
 	}
 

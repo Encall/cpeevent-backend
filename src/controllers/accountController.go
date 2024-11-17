@@ -15,19 +15,19 @@ import (
 // var validate = validator.New()
 
 type UpdateAccountInfo struct { //You have to name the struct field according to the JSON attribute
-	FirstName   string `json:"firstName"`
-	LastName    string `json:"lastName"`
-	Year        int    `json:"year"`
-	Email       string `json:"email"`
-	PhoneNumber string `json:"phoneNumber"`
+	FirstName   string `json:"firstName" bson:"firstName"`
+	LastName    string `json:"lastName" bson:"lastName"`
+	Year        int    `json:"year" bson:"year"`
+	Email       string `json:"email" bson:"email"`
+	PhoneNumber string `json:"phoneNumber" bson:"phoneNumber"`
 }
 
-type UpdateUsernameInfo struct{
-	Username	string `json:"username"`
+type UpdateUsernameInfo struct {
+	Username string `json:"username" bson:"username"`
 }
 
-func GetUsername() gin.HandlerFunc{
-	return func(c *gin.Context){
+func GetUsername() gin.HandlerFunc {
+	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		userID, exists := c.Get("studentid")
 
@@ -44,7 +44,7 @@ func GetUsername() gin.HandlerFunc{
 			"username": 1,
 		}
 
-		err := userCollection.FindOne(ctx, bson.M{"studentid": userID}, options.FindOne().SetProjection(projection)).Decode(&username)
+		err := userCollection.FindOne(ctx, bson.M{"studentID": userID}, options.FindOne().SetProjection(projection)).Decode(&username)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -57,8 +57,8 @@ func GetUsername() gin.HandlerFunc{
 	}
 }
 
-func UpdateUsername() gin.HandlerFunc{
-	return func(c *gin.Context){
+func UpdateUsername() gin.HandlerFunc {
+	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		userID, exists := c.Get("studentid")
 		defer cancel()
@@ -74,10 +74,10 @@ func UpdateUsername() gin.HandlerFunc{
 		}
 
 		updateInfo := bson.M{
-			"username":   username.Username,
+			"username": username.Username,
 		}
 
-		result, err := userCollection.UpdateOne(ctx, bson.M{"studentid": userID}, bson.M{"$set": updateInfo})
+		result, err := userCollection.UpdateOne(ctx, bson.M{"studentID": userID}, bson.M{"$set": updateInfo})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -100,16 +100,16 @@ func GetInfo() gin.HandlerFunc {
 		var info UpdateAccountInfo
 
 		projection := bson.M{
-			"firstname": 1,
-			"lastname": 1,
-			"year": 1,
-			"email": 1,
-			"phonenumber": 1,
+			"firstName":   1,
+			"lastName":    1,
+			"year":        1,
+			"email":       1,
+			"phoneNumber": 1,
 		}
 
 		// err := userCollection.FindOne(ctx, bson.M{"studentid": userID}).Decode(&foundUser)
 
-		err := userCollection.FindOne(ctx, bson.M{"studentid": userID}, options.FindOne().SetProjection(projection)).Decode(&info)
+		err := userCollection.FindOne(ctx, bson.M{"studentID": userID}, options.FindOne().SetProjection(projection)).Decode(&info)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -140,14 +140,14 @@ func UpdateInfo() gin.HandlerFunc {
 		}
 
 		updateInfo := bson.M{
-			"firstname":   info.FirstName,
-			"lastname":    info.LastName,
+			"firstName":   info.FirstName,
+			"lastName":    info.LastName,
 			"year":        info.Year,
 			"email":       info.Email,
-			"phonenumber": info.PhoneNumber,
+			"phoneNumber": info.PhoneNumber,
 		}
 
-		result, err := userCollection.UpdateOne(ctx, bson.M{"studentid": userID}, bson.M{"$set": updateInfo})
+		result, err := userCollection.UpdateOne(ctx, bson.M{"studentID": userID}, bson.M{"$set": updateInfo})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return

@@ -33,6 +33,45 @@ func NewPost(post models.Post) interface{} {
 	}
 }
 
+func CreateNewPost() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel() // Ensure cancel is called to release resources
+
+		// Bind the JSON data to a CreatePostRequest struct
+		var request models.CreatePostRequest
+
+		if err := c.BindJSON(&request); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Log the eventID
+		eventID := request.EventID
+
+		// Initialize the ID field if it's not already set
+		if request.UpdatedPost.ID.IsZero() {
+			request.UpdatedPost.ID = primitive.NewObjectID()
+		}
+
+		// Insert the post document
+		_, err := postCollection.InsertOne(ctx, request.UpdatedPost)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Call AddPostToPostList to add the post ID to the event's post list
+		err = AddPostToPostList(request.UpdatedPost.ID, eventID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"success": true, "data": request})
+	}
+}
+
 func GetPostFromEvent() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)

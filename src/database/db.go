@@ -13,10 +13,14 @@ import (
 )
 
 func Dbinstance() *mongo.Client {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	mode := os.Getenv("GIN_MODE")
+	if mode == "" || mode == "debug" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
 	}
+
 	mongoURI := os.Getenv("MONGO_URI")
 	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(mongoURI))
 	if err != nil {

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cpeevo-config
+data:
+  DATABASE_NAME: "cpeEVO"
+  GIN_MODE: "release"
+  ORIGIN_URL: "http://localhost:5173"

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"os"
 	"time"
 
@@ -43,6 +44,11 @@ func main() {
 	// Register all routes with /api prefix
 	api := r.Group("/api")
 	routes.UserRoutes(api)
+
+	// Health Check endpoint
+	r.GET("/healthcheck", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "healthy"})
+	})
 
 	// Start the Gin server on port 8080
 	r.Run(":8080")
