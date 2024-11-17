@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -17,62 +19,84 @@ import (
 var transactionCollection *mongo.Collection = database.OpenCollection(database.Client, "transactions")
 
 func SubmitAnswer() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-		defer cancel() // Ensure cancel is called to release resources
+    return func(c *gin.Context) {
+        var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+        defer cancel() // Ensure cancel is called to release resources
 
-		// Parse the request body to get the postID
-		var request struct {
-			PostID primitive.ObjectID `json:"postID"`
-		}
-		if err := c.BindJSON(&request); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
+        // Log the request body
+        body, err := io.ReadAll(c.Request.Body)
+        if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+            return
+        }
 
-		// Query the post by its ID
-		var post models.Post
-		if err := postCollection.FindOne(ctx, bson.M{"_id": request.PostID}).Decode(&post); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Post not found"})
-			return
-		}
+        // Re-bind the request body
+        c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
 
-		switch post.Kind {
-		case "vote":
-			var voteRequest models.AVote
-			if err := c.BindJSON(&voteRequest); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-				return
-			}
+        // Parse the request body to get the postID
+        var request struct {
+            PostID primitive.ObjectID `json:"postID"`
+        }
+        if err := c.BindJSON(&request); err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+            return
+        }
 
-			// insert the vote request into transactions
-			_, err := transactionCollection.InsertOne(ctx, voteRequest)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
+        // Query the post by its ID
+        var post models.Post
+        if err := postCollection.FindOne(ctx, bson.M{"_id": request.PostID}).Decode(&post); err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Post not found"})
+            return
+        }
 
-		case "form":
-			var formRequest models.AForm
-			if err := c.BindJSON(&formRequest); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-				return
-			}
+        switch post.Kind {
+        case "vote":
+            var voteRequest models.AVote
 
-			// insert the form request into transactions
-			_, err := transactionCollection.InsertOne(ctx, formRequest)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-				return
-			}
+            // Re-bind the request body again for voteRequest
+            c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
+
+            if err := c.BindJSON(&voteRequest); err != nil {
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+            }
+
+            voteRequest.ID = primitive.NewObjectID()
+
+            // Insert the vote request into transactions
+            _, err = transactionCollection.InsertOne(ctx, voteRequest)
+            if err != nil {
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+            }
+
+        case "form":
+            var formRequest models.AForm
+
+            // Re-bind the request body again for formRequest
+            c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
+
+            if err := c.BindJSON(&formRequest); err != nil {
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+            }
+
+            formRequest.ID = primitive.NewObjectID()
+
+            // Insert the form request into transactions
+            _, err = transactionCollection.InsertOne(ctx, formRequest)
+            if err != nil {
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+            }
 
 		default:
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Unknown post kind"})
 			return
-		}
+        }
 
 		c.JSON(http.StatusOK, gin.H{"success": true, "data": "answer submitted"})
-	}
+    }
 }
 
 func GetUserAnswer() gin.HandlerFunc {
@@ -118,3 +142,4 @@ func GetUserAnswer() gin.HandlerFunc {
 		}
 	}
 }
+
