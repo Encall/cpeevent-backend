@@ -49,6 +49,7 @@ func UserRoutes(route *gin.RouterGroup) {
 		protected.GET("posts/:postID", controllers.GetPostFromPostId())
 		protected.POST("/posts/create", controllers.CreateNewPost())
 		protected.POST("posts/submit", controllers.SubmitAnswer())
+		protected.GET("posts/answer", controllers.GetUserAnswer())
 
 	}
 
