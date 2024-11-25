@@ -26,8 +26,7 @@ func CreateNewEvent() gin.HandlerFunc {
 		defer cancel()
 
 		var event models.Event
-		// set startDate as current time
-		event.StartDate = time.Now()
+
 		if err := c.BindJSON(&event); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
