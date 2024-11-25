@@ -30,17 +30,20 @@ type Post struct {
 // PPost extends Post for regular posts.
 type PPost struct {
 	Post
+	TimeUp bool `bson:"timeUp" json:"timeUp"`
 }
 
 // PVote extends Post for vote posts.
 type PVote struct {
 	Post
 	Questions []Question `bson:"questions" json:"questions"` // Include questions for vote posts
+	TimeUp    bool       `bson:"timeUp" json:"timeUp"`
 }
 
 type PForm struct {
 	Post
 	Questions []Question `bson:"questions" json:"questions"`
+	TimeUp    bool       `bson:"timeUp" json:"timeUp"`
 }
 
 type CreatePostRequest struct {
