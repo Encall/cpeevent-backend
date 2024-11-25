@@ -5,4 +5,4 @@ metadata:
 data:
   DATABASE_NAME: "cpeEVO"
   GIN_MODE: "release"
-  ORIGIN_URL: "http://localhost:5173"
+  ORIGIN_URL: "https://cpeevo.encall.live"

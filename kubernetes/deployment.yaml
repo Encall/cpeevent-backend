@@ -19,6 +19,13 @@ spec:
       labels:
         app: cpeevo-backend
     spec:
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: "kubernetes.io/hostname"
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: cpeevo-backend
       containers:
       - name: cpeevo-backend
         image: encalls/cpeevo-backend:latest
