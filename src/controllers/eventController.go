@@ -20,30 +20,149 @@ import (
 
 var eventCollection *mongo.Collection = database.OpenCollection(database.Client, "events")
 
+func CreateNewEvent() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		var event models.Event
+
+		if err := c.BindJSON(&event); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		result, err := eventCollection.InsertOne(ctx, event)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating event"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"data": result, "message": "Event created successfully"})
+	}
+}
+
+func GetEvent() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		eventID := c.Param("eventID")
+
+		if eventID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "eventID is required"})
+			return
+		}
+
+		objectID, err := primitive.ObjectIDFromHex(eventID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid eventID format"})
+			return
+		}
+
+		var event models.Event
+		err = eventCollection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&event)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"data": event})
+	}
+}
+
+func UpdateEvent() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		// Define a struct to represent the request body
+		var req models.Event
+		if err := c.BindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		if req.ID == primitive.NilObjectID {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "eventID is required"})
+			return
+		}
+
+		objectID := req.ID
+
+		update := bson.D{{Key: "$set", Value: req}}
+
+		result, err := eventCollection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error updating event"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"data": result, "message": "Event updated successfully"})
+	}
+}
+
+func DeleteEvent() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		// Define a struct to represent the request body
+		type DeleteEventRequest struct {
+			EventID string `json:"_id"`
+		}
+
+		var req DeleteEventRequest
+		if err := c.BindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		if req.EventID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "eventID is required"})
+			return
+		}
+
+		objectID, err := primitive.ObjectIDFromHex(req.EventID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid eventID format"})
+			return
+		}
+
+		result, err := eventCollection.DeleteOne(ctx, bson.M{"_id": objectID})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting event"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"data": result, "message": "Event deleted successfully"})
+	}
+}
+
 func AddPostToPostList(postID primitive.ObjectID, eventID primitive.ObjectID) error {
-    var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-    defer cancel()
+	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+	defer cancel()
 
-    // Log the postID and eventID
-    log.Printf("Adding postID: %s to eventID: %s", postID.Hex(), eventID.Hex())
+	// Log the postID and eventID
+	log.Printf("Adding postID: %s to eventID: %s", postID.Hex(), eventID.Hex())
 
-    update := bson.D{
-        {"$addToSet", bson.D{
-            {"postList", postID},
-        }},
-    }
+	update := bson.D{
+		{"$addToSet", bson.D{
+			{"postList", postID},
+		}},
+	}
 
-    // Perform the update operation
-    result, err := eventCollection.UpdateOne(ctx, bson.M{"_id": eventID}, update)
-    if err != nil {
-    	log.Printf("Error updating event: %v", err)
-        return err
-    }
+	// Perform the update operation
+	result, err := eventCollection.UpdateOne(ctx, bson.M{"_id": eventID}, update)
+	if err != nil {
+		log.Printf("Error updating event: %v", err)
+		return err
+	}
 
-    // Log the result of the update operation
-    log.Printf("MatchedCount: %d, ModifiedCount: %d", result.MatchedCount, result.ModifiedCount)
+	// Log the result of the update operation
+	log.Printf("MatchedCount: %d, ModifiedCount: %d", result.MatchedCount, result.ModifiedCount)
 
-    return nil
+	return nil
 }
 
 func GetEvents() gin.HandlerFunc {
