@@ -50,6 +50,7 @@ func UserRoutes(route *gin.RouterGroup) {
 		protected.POST("/posts/create", controllers.CreateNewPost())
 		protected.POST("posts/submit", controllers.SubmitAnswer())
 		protected.GET("posts/answer", controllers.GetUserAnswer())
+		protected.GET("posts/summary", controllers.GetSummaryAnswer())
 
 	}
 
