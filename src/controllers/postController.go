@@ -130,6 +130,45 @@ func GetPostFromEvent() gin.HandlerFunc {
 	}
 }
 
+func UpdateEventHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var cancel context.CancelFunc
+		_, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		// Define a struct to represent the request body
+		type UpdateEventRequest struct {
+			EventID string       `json:"eventID"`
+			Event   models.Event `json:"event"`
+		}
+
+		var req UpdateEventRequest
+		if err := c.BindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		if req.EventID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "eventID is required"})
+			return
+		}
+
+		_, err := primitive.ObjectIDFromHex(req.EventID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid eventID format"})
+			return
+		}
+
+		// Use req.Event for the event data
+		event := req.Event
+
+		// Continue with the rest of the update logic...
+		// For example, update the event in the database
+		// db.UpdateEvent(objectID, event)
+
+		c.JSON(http.StatusOK, gin.H{"data": event})
+	}
+}
 func GetPostFromPostId() gin.HandlerFunc {
 
 	return func(c *gin.Context) {

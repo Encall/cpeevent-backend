@@ -42,6 +42,103 @@ func CreateNewEvent() gin.HandlerFunc {
 	}
 }
 
+func GetEvent() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		eventID := c.Param("eventID")
+
+		if eventID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "eventID is required"})
+			return
+		}
+
+		objectID, err := primitive.ObjectIDFromHex(eventID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid eventID format"})
+			return
+		}
+
+		var event models.Event
+		err = eventCollection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&event)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "event not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"data": event})
+	}
+}
+
+func UpdateEvent() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		// Define a struct to represent the request body
+		var req models.Event
+		if err := c.BindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		if req.ID == primitive.NilObjectID {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "eventID is required"})
+			return
+		}
+
+		objectID := req.ID
+
+		update := bson.D{{Key: "$set", Value: req}}
+
+		result, err := eventCollection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error updating event"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"data": result, "message": "Event updated successfully"})
+	}
+}
+
+func DeleteEvent() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		// Define a struct to represent the request body
+		type DeleteEventRequest struct {
+			EventID string `json:"_id"`
+		}
+
+		var req DeleteEventRequest
+		if err := c.BindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		if req.EventID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "eventID is required"})
+			return
+		}
+
+		objectID, err := primitive.ObjectIDFromHex(req.EventID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid eventID format"})
+			return
+		}
+
+		result, err := eventCollection.DeleteOne(ctx, bson.M{"_id": objectID})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting event"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"data": result, "message": "Event deleted successfully"})
+	}
+}
+
 func AddPostToPostList(postID primitive.ObjectID, eventID primitive.ObjectID) error {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
