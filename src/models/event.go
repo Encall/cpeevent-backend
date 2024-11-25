@@ -17,13 +17,13 @@ type Event struct {
 	ID               primitive.ObjectID   `json:"_id,omitempty" bson:"_id,omitempty"`
 	EventName        string               `json:"eventName" bson:"eventName" binding:"required"`
 	EventDescription string               `json:"eventDescription" bson:"eventDescription"`
-	NParticipant     int                  `json:"nParticipant" bson:"nParticipant"`
+	NParticipant     *int                 `json:"nParticipant" bson:"nParticipant"`
 	Participants     []string             `json:"participants" bson:"participants"`
-	NStaff           int                  `json:"nStaff" bson:"nStaff"`
+	NStaff           *int                 `json:"nStaff" bson:"nStaff"`
 	Staff            []StaffMember        `json:"staff" bson:"staff"`
 	StartDate        time.Time            `json:"startDate" bson:"startDate"`
 	EndDate          time.Time            `json:"endDate" bson:"endDate"`
-	President        string               `json:"president" bson:"president"`
+	President        *string              `json:"president" bson:"president"`
 	Kind             string               `json:"kind" bson:"kind"`
 	Role             []string             `json:"role" bson:"role"`
 	Icon             *string              `json:"icon" bson:"icon"`

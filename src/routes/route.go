@@ -56,5 +56,6 @@ func UserRoutes(route *gin.RouterGroup) {
 		protected.GET("/protected-route2", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"message": "This is a protected route with level 2 access"})
 		})
+		protected.POST("/event/create", controllers.CreateNewEvent())
 	}
 }

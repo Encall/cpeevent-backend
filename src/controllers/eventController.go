@@ -20,30 +20,53 @@ import (
 
 var eventCollection *mongo.Collection = database.OpenCollection(database.Client, "events")
 
+func CreateNewEvent() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		var event models.Event
+		// set startDate as current time
+		event.StartDate = time.Now()
+		if err := c.BindJSON(&event); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		result, err := eventCollection.InsertOne(ctx, event)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating event"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"data": result, "message": "Event created successfully"})
+	}
+}
+
 func AddPostToPostList(postID primitive.ObjectID, eventID primitive.ObjectID) error {
-    var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-    defer cancel()
+	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+	defer cancel()
 
-    // Log the postID and eventID
-    log.Printf("Adding postID: %s to eventID: %s", postID.Hex(), eventID.Hex())
+	// Log the postID and eventID
+	log.Printf("Adding postID: %s to eventID: %s", postID.Hex(), eventID.Hex())
 
-    update := bson.D{
-        {"$addToSet", bson.D{
-            {"postList", postID},
-        }},
-    }
+	update := bson.D{
+		{"$addToSet", bson.D{
+			{"postList", postID},
+		}},
+	}
 
-    // Perform the update operation
-    result, err := eventCollection.UpdateOne(ctx, bson.M{"_id": eventID}, update)
-    if err != nil {
-    	log.Printf("Error updating event: %v", err)
-        return err
-    }
+	// Perform the update operation
+	result, err := eventCollection.UpdateOne(ctx, bson.M{"_id": eventID}, update)
+	if err != nil {
+		log.Printf("Error updating event: %v", err)
+		return err
+	}
 
-    // Log the result of the update operation
-    log.Printf("MatchedCount: %d, ModifiedCount: %d", result.MatchedCount, result.ModifiedCount)
+	// Log the result of the update operation
+	log.Printf("MatchedCount: %d, ModifiedCount: %d", result.MatchedCount, result.ModifiedCount)
 
-    return nil
+	return nil
 }
 
 func GetEvents() gin.HandlerFunc {
