@@ -143,3 +143,79 @@ func GetUserAnswer() gin.HandlerFunc {
 	}
 }
 
+func GetSummaryAnswer() gin.HandlerFunc{
+    return func(c *gin.Context){
+        var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel() // Ensure cancel is called to release resources
+
+        var request struct{
+            PostID primitive.ObjectID `json:"postID"`
+        }
+
+        if err:= c.BindJSON(&request); err != nil{
+            c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+            return
+        }
+
+        var post models.Post
+        if err := postCollection.FindOne(ctx, bson.M{"_id": request.PostID}).Decode(&post); err != nil{
+            c.JSON(http.StatusInternalServerError, gin.H{"error":err.Error()})
+            return
+        }
+
+        aggregateQuery := mongo.Pipeline{
+            {{"$match", bson.D{{"postID", request.PostID}}}},
+            {{"$group", bson.D{
+                {"_id", "$answer"},
+                {"count", bson.D{{"$sum", 1}}},
+            }}},
+        }
+
+        
+
+        cursor, err := transactionCollection.Aggregate(ctx, aggregateQuery)
+
+        if err != nil{
+            c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        }
+        defer cursor.Close(ctx)
+
+        type Result struct{
+            Answer string `bson:"_id" json:"answer"`
+            Count int`bson:"count" json:"count"`
+        }
+
+        var results []Result
+
+        if err:= cursor.All(ctx, &results); err != nil{
+            c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+            return
+        }
+
+        totalVotes := 0
+        for _, result := range results{
+            totalVotes += result.Count 
+        }
+
+        response := struct{
+            TotalVotes int `json:"totalVotes"`
+            Results [] Result `json:"results"`
+        }{
+            TotalVotes: totalVotes,
+            Results: results,
+        }
+
+        c.JSON(http.StatusOK, response)
+
+        // if err := cursor.All(ctx, &answer); err != nil{
+        //     c.JSON(http.StatusInternalServerError, gin.H{"error":err.Error()})
+        //     return
+        // }
+
+        // c.JSON(http.StatusOK, answer)
+
+        
+
+
+    }
+}
