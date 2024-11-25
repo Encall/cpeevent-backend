@@ -24,9 +24,9 @@ func NewPost(post models.Post) interface{} {
 		return models.PPost{Post: post}
 	case "vote":
 		// Create and return a PVote with questions
-		return models.PVote{Post: post, Questions: post.Questions}
+		return models.PVote{Post: post, Questions: post.VoteQuestions}
 	case "form":
-		return models.PForm{Post: post, Questions: post.Questions}
+		return models.PForm{Post: post, Questions: post.FormQuestions}
 	default:
 		// Handle unknown post kinds, return nil or an error if needed
 		return nil
@@ -45,7 +45,6 @@ func CreateNewPost() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-
 		// Log the eventID
 		eventID := request.EventID
 
