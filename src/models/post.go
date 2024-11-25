@@ -7,7 +7,6 @@ import (
 // VoteQuestion represents a question in a vote post.
 type VoteQuestion struct {
 	Question string   `bson:"question,omitempty" json:"question,omitempty"`
-	MaxSel   string   `bson:"maxSel,omitempty" json:"maxSel,omitempty"`
 	Options  []string `bson:"options,omitempty" json:"options,omitempty"`
 }
 
