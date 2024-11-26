@@ -13,12 +13,13 @@ type VoteQuestion struct {
 type FormQuestion struct {
 	Question  string   `bson:"question" json:"question"`
 	InputType string   `bson:"inputType" json:"inputType"`
-	MaxSel   string   `bson:"maxSel,omitempty" json:"maxSel,omitempty"`
+	MaxSel    string   `bson:"maxSel,omitempty" json:"maxSel,omitempty"`
 	Options   []string `bson:"options" json:"options"`
 }
 
 // Post represents a general post.
 type Post struct {
+	PostID        string  //use get postID in string format
 	ID            primitive.ObjectID  `bson:"_id" json:"_id"`
 	Kind          string              `bson:"kind" json:"kind"`
 	AssignTo      []string            `bson:"assignTo" json:"assignTo"`
