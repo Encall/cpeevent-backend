@@ -165,6 +165,32 @@ func AddPostToPostList(postID primitive.ObjectID, eventID primitive.ObjectID) er
 	return nil
 }
 
+func DeletePostFromPostList(postID primitive.ObjectID, eventID primitive.ObjectID) error {
+	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+	defer cancel()
+
+	// Log the postID and eventID
+	log.Printf("Deleting postID: %s from eventID: %s", postID.Hex(), eventID.Hex())
+
+	update := bson.D{
+		{"$pull", bson.D{
+			{"postList", postID},
+		}},
+	}
+
+	// Perform the update operation
+	result, err := eventCollection.UpdateOne(ctx, bson.M{"_id": eventID}, update)
+	if err != nil {
+		log.Printf("Error updating event: %v", err)
+		return err
+	}
+
+	// Log the result of the update operation
+	log.Printf("MatchedCount: %d, ModifiedCount: %d", result.MatchedCount, result.ModifiedCount)
+
+	return nil
+}
+
 func GetEvents() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
