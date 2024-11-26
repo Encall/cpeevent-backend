@@ -71,12 +71,12 @@ func NewPost(post models.Post) interface{} {
 	switch post.Kind {
 	case "post":
 		// Create and return a PPost
-		return models.PPost{Post: post}
+		return models.PPost{Post: post, TimeUp: timeUp}
 	case "vote":
 		// Create and return a PVote with questions
-		return models.PVote{Post: post, Questions: post.VoteQuestions}
+		return models.PVote{Post: post, Questions: post.VoteQuestions, TimeUp: timeUp}
 	case "form":
-		return models.PForm{Post: post, Questions: post.FormQuestions}
+		return models.PForm{Post: post, Questions: post.FormQuestions, TimeUp: timeUp}
 	default:
 		// Handle unknown post kinds, return nil or an error if needed
 		return nil
@@ -132,6 +132,12 @@ func GetPostFromEvent() gin.HandlerFunc {
 			return
 		}
 
+		userID, exists := c.Get("studentid")
+		if !exists {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "User ID not found in context"})
+			return
+		}
+
 		// Get the eventID from the URL parameters
 		eventID := c.Param("eventID")
 		if eventID == "" {
@@ -177,7 +183,37 @@ func GetPostFromEvent() gin.HandlerFunc {
 		}
 
 		// Query the posts collection based on user role
+		isParticipant := false
+		isStaff := false
+		for _, participant := range event.Participants {
+			if participant == userID {
+				isParticipant = true
+				break
+			}
+		}
+		role := ""
+		for _, staff := range event.Staff {
+			if staff.StdID == userID {
+				isStaff = true
+				role = staff.Role
+				break
+			}
+		}
+
+		// Check if the user is a participant or staff in the event
+		if !isParticipant && !isStaff {
+			c.JSON(http.StatusOK, gin.H{"success": true, "data": []interface{}{}})
+			return
+		}
+
+		// Query the posts collection based on user role
 		var posts []models.Post
+		var cursor *mongo.Cursor
+		if isStaff {
+			cursor, err = postCollection.Find(ctx, bson.M{"_id": bson.M{"$in": event.PostList}, "assignTo": role})
+		} else {
+			cursor, err = postCollection.Find(ctx, bson.M{"_id": bson.M{"$in": event.PostList}, "public": true})
+		}
 		var cursor *mongo.Cursor
 		if isStaff {
 			cursor, err = postCollection.Find(ctx, bson.M{"_id": bson.M{"$in": event.PostList}, "assignTo": role})
@@ -201,7 +237,16 @@ func GetPostFromEvent() gin.HandlerFunc {
 
 		// Convert each post to its specific type based on the Kind
 		for _, post := range posts {
-			specificPost := NewPost(post) // Convert to specific type
+			specificPost := NewPost(post, false) // Convert to specific type
+			if post.EndDate != nil {
+				postEndDateLocal := post.EndDate.Time()
+				currentTimeLocal := time.Now().Add(time.Hour * 7)
+
+				if postEndDateLocal.Before(currentTimeLocal) {
+					specificPost = NewPost(post, true)
+				}
+			}
+
 			if specificPost == nil {
 				continue // Or handle unknown kind if needed
 			}
@@ -280,7 +325,16 @@ func GetPostFromPostId() gin.HandlerFunc {
 		}
 
 		// Convert the post to its specific type based on the Kind
-		specificPost := NewPost(post)
+		specificPost := NewPost(post, false)
+		if post.EndDate != nil {
+			postEndDateLocal := post.EndDate.Time()
+			currentTimeLocal := time.Now().Add(time.Hour * 7)
+
+			if postEndDateLocal.Before(currentTimeLocal) {
+				specificPost = NewPost(post, true)
+			}
+		}
+
 		if specificPost == nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unknown post kind"})
 			return
