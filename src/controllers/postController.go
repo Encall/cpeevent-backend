@@ -67,7 +67,7 @@ func UpdatePost() gin.HandlerFunc {
 	}
 }
 
-func NewPost(post models.Post) interface{} {
+func NewPost(post models.Post, timeUp bool) interface{} {
 	switch post.Kind {
 	case "post":
 		// Create and return a PPost
@@ -132,12 +132,6 @@ func GetPostFromEvent() gin.HandlerFunc {
 			return
 		}
 
-		userID, exists := c.Get("studentid")
-		if !exists {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "User ID not found in context"})
-			return
-		}
-
 		// Get the eventID from the URL parameters
 		eventID := c.Param("eventID")
 		if eventID == "" {
@@ -183,37 +177,7 @@ func GetPostFromEvent() gin.HandlerFunc {
 		}
 
 		// Query the posts collection based on user role
-		isParticipant := false
-		isStaff := false
-		for _, participant := range event.Participants {
-			if participant == userID {
-				isParticipant = true
-				break
-			}
-		}
-		role := ""
-		for _, staff := range event.Staff {
-			if staff.StdID == userID {
-				isStaff = true
-				role = staff.Role
-				break
-			}
-		}
-
-		// Check if the user is a participant or staff in the event
-		if !isParticipant && !isStaff {
-			c.JSON(http.StatusOK, gin.H{"success": true, "data": []interface{}{}})
-			return
-		}
-
-		// Query the posts collection based on user role
 		var posts []models.Post
-		var cursor *mongo.Cursor
-		if isStaff {
-			cursor, err = postCollection.Find(ctx, bson.M{"_id": bson.M{"$in": event.PostList}, "assignTo": role})
-		} else {
-			cursor, err = postCollection.Find(ctx, bson.M{"_id": bson.M{"$in": event.PostList}, "public": true})
-		}
 		var cursor *mongo.Cursor
 		if isStaff {
 			cursor, err = postCollection.Find(ctx, bson.M{"_id": bson.M{"$in": event.PostList}, "assignTo": role})
