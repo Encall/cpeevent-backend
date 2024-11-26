@@ -267,6 +267,7 @@ func JoinEvent() gin.HandlerFunc {
 		type JoinRequest struct {
 			EventID string `json:"eventID" binding:"required"`
 			Role    string `json:"role" binding:"required"`
+			SubRole string `json:"subRole"`
 		}
 
 		var joinRequest JoinRequest
@@ -310,11 +311,10 @@ func JoinEvent() gin.HandlerFunc {
 		}
 
 		var staffMember models.StaffMember
-
 		update := bson.D{}
 		if joinRequest.Role == "staff" {
 			staffMember.StdID = userID.(string)
-			staffMember.Role = ""
+			staffMember.Role = joinRequest.SubRole
 			update = bson.D{
 				{"$addToSet", bson.D{
 					{"staff", staffMember},
