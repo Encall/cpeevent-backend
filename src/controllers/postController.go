@@ -76,6 +76,12 @@ func GetPostFromEvent() gin.HandlerFunc {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel() // Ensure cancel is called to release resources
 
+		userID, exists := c.Get("studentid")
+		if !exists {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "User ID not found in context"})
+			return
+		}
+
 		// Get the eventID from the URL parameters
 		eventID := c.Param("eventID")
 		if eventID == "" {
@@ -97,9 +103,37 @@ func GetPostFromEvent() gin.HandlerFunc {
 			return
 		}
 
-		// Query the posts collection with a single query using $in
+		isParticipant := false
+		isStaff := false
+		for _, participant := range event.Participants {
+			if participant == userID {
+				isParticipant = true
+				break
+			}
+		}
+		role := ""
+		for _, staff := range event.Staff {
+			if staff.StdID == userID {
+				isStaff = true
+				role = staff.Role
+				break
+			}
+		}
+
+		// Check if the user is a participant or staff in the event
+		if !isParticipant && !isStaff {
+			c.JSON(http.StatusOK, gin.H{"success": true, "data": []interface{}{}})
+			return
+		}
+
+		// Query the posts collection based on user role
 		var posts []models.Post
-		cursor, err := postCollection.Find(ctx, bson.M{"_id": bson.M{"$in": event.PostList}})
+		var cursor *mongo.Cursor
+		if isStaff {
+			cursor, err = postCollection.Find(ctx, bson.M{"_id": bson.M{"$in": event.PostList}, "assignTo": role})
+		} else {
+			cursor, err = postCollection.Find(ctx, bson.M{"_id": bson.M{"$in": event.PostList}, "public": true})
+		}
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving posts"})
 			return
