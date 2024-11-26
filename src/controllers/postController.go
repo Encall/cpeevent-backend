@@ -17,6 +17,56 @@ import (
 
 var postCollection *mongo.Collection = database.OpenCollection(database.Client, "posts")
 
+func UpdatePost() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		var post models.Post
+		if err := c.BindJSON(&post); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		updatePost := bson.M{
+			"assignTo":    post.AssignTo,
+			"public":      post.Public,
+			"title":       post.Title,
+			"description": post.Description,
+			"endDate":     post.EndDate,
+		}
+
+		switch post.Kind {
+		case "post":
+			updatePost["markdown"] = post.Markdown
+		case "vote":
+			updatePost["voteQuestions"] = post.VoteQuestions
+		case "form":
+			updatePost["formQuestions"] = post.FormQuestions
+		default:
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post kind"})
+			return
+		}
+
+		objID, err := primitive.ObjectIDFromHex(post.PostID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid postID format"})
+		}
+		result, err := postCollection.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{"$set": updatePost})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		if result.MatchedCount == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"success": true, "data": post})
+	}
+}
+
 func NewPost(post models.Post) interface{} {
 	switch post.Kind {
 	case "post":
