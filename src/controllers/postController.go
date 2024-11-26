@@ -110,16 +110,16 @@ func DeletePost() gin.HandlerFunc {
 	}
 }
 
-func NewPost(post models.Post) interface{} {
+func NewPost(post models.Post, timeUp bool) interface{} {
 	switch post.Kind {
 	case "post":
 		// Create and return a PPost
-		return models.PPost{Post: post}
+		return models.PPost{Post: post, TimeUp: timeUp}
 	case "vote":
 		// Create and return a PVote with questions
-		return models.PVote{Post: post, Questions: post.VoteQuestions}
+		return models.PVote{Post: post, Questions: post.VoteQuestions, TimeUp: timeUp}
 	case "form":
-		return models.PForm{Post: post, Questions: post.FormQuestions}
+		return models.PForm{Post: post, Questions: post.FormQuestions, TimeUp: timeUp}
 	default:
 		// Handle unknown post kinds, return nil or an error if needed
 		return nil
@@ -244,7 +244,16 @@ func GetPostFromEvent() gin.HandlerFunc {
 
 		// Convert each post to its specific type based on the Kind
 		for _, post := range posts {
-			specificPost := NewPost(post) // Convert to specific type
+			specificPost := NewPost(post, false) // Convert to specific type
+			if post.EndDate != nil {
+				postEndDateLocal := post.EndDate.Time()
+				currentTimeLocal := time.Now().Add(time.Hour * 7)
+
+				if postEndDateLocal.Before(currentTimeLocal) {
+					specificPost = NewPost(post, true)
+				}
+			}
+
 			if specificPost == nil {
 				continue // Or handle unknown kind if needed
 			}
@@ -323,7 +332,16 @@ func GetPostFromPostId() gin.HandlerFunc {
 		}
 
 		// Convert the post to its specific type based on the Kind
-		specificPost := NewPost(post)
+		specificPost := NewPost(post, false)
+		if post.EndDate != nil {
+			postEndDateLocal := post.EndDate.Time()
+			currentTimeLocal := time.Now().Add(time.Hour * 7)
+
+			if postEndDateLocal.Before(currentTimeLocal) {
+				specificPost = NewPost(post, true)
+			}
+		}
+
 		if specificPost == nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unknown post kind"})
 			return
