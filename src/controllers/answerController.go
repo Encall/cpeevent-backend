@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sort"
 	"time"
 
 	database "github.com/encall/cpeevent-backend/src/database"
@@ -205,7 +206,63 @@ func GetSummaryAnswer() gin.HandlerFunc{
             c.JSON(http.StatusOK, gin.H{"success": true, "data": response})
 
         case "form":
-            
+            var answers []models.AForm
+            query := bson.M{"postID": postID}
+            cursor, err := transactionCollection.Find(ctx, query)
+            if err != nil {
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+            }
+
+            defer cursor.Close(ctx)
+
+            if err := cursor.All(ctx, &answers); err != nil {
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+            }
+
+            // Transform the data to the desired structure
+            resultMap := make(map[int]map[string][]map[string]interface{})
+            for _, answer := range answers {
+                for _, question := range answer.AnswerList {
+                    if _, ok := resultMap[question.QuestionIndex]; !ok {
+                        resultMap[question.QuestionIndex] = make(map[string][]map[string]interface{})
+                    }
+                    if _, ok := resultMap[question.QuestionIndex][question.InputType]; !ok {
+                        resultMap[question.QuestionIndex][question.InputType] = []map[string]interface{}{}
+                    }
+                    resultMap[question.QuestionIndex][question.InputType] = append(resultMap[question.QuestionIndex][question.InputType], map[string]interface{}{
+                        "studentID": answer.StudentID,
+                        "answer":    question.Answers,
+                    })
+                }
+            }
+
+            // Convert the resultMap to the desired JSON structure
+            var results []map[string]interface{}
+            for questionIndex, typeMap := range resultMap {
+                for inputType, studentAnswers := range typeMap {
+                    results = append(results, map[string]interface{}{
+                        "questionIndex": questionIndex,
+                        "type":          inputType,
+                        "answers":       studentAnswers,
+                    })
+                }
+            }
+
+            sort.Slice(results, func(i, j int) bool {
+                return results[i]["questionIndex"].(int) < results[j]["questionIndex"].(int)
+            })
+
+            response := map[string]interface{}{
+                "postID":  postID,
+                "results": results,
+            }
+
+            c.JSON(http.StatusOK, gin.H{"success": true, "data": response})
+        default:
+            c.JSON(http.StatusBadRequest, gin.H{"error": "Unknown post kind"})
+            return
 
         }
 
