@@ -13,6 +13,7 @@ type VoteQuestion struct {
 type FormQuestion struct {
 	Question  string   `bson:"question" json:"question"`
 	InputType string   `bson:"inputType" json:"inputType"`
+	MaxSel   string   `bson:"maxSel,omitempty" json:"maxSel,omitempty"`
 	Options   []string `bson:"options" json:"options"`
 }
 
