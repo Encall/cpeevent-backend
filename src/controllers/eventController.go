@@ -214,6 +214,33 @@ func SearchEvents() gin.HandlerFunc {
 	}
 }
 
+func GetAllRole() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		eventID := c.Param("eventID")
+		if eventID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "eventID is required"})
+			return
+		}
+		var event models.Event
+		objectID, err := primitive.ObjectIDFromHex(eventID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid eventID format"})
+			return
+		}
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		err = eventCollection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&event)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Event not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"data": event.Role})
+
+	}
+}
+
 func TestEvents() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID, exists := c.Get("studentid")
