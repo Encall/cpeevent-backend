@@ -34,6 +34,7 @@ func CreateNewEvent() gin.HandlerFunc {
 
 		event.Participants = []string{}
 		event.Staff = []models.StaffMember{}
+		event.PostList = []primitive.ObjectID{}
 
 		eventName := event.EventName
 		var eventCheck models.Event
