@@ -67,6 +67,92 @@ func UpdatePost() gin.HandlerFunc {
 	}
 }
 
+func DeletePost() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		type DeletePost struct {
+			EventID string `json:"eventID"`
+			PostID  string `json:"postID"`
+		}
+
+		var postID DeletePost
+		if err := c.BindJSON(&postID); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		postObjID, err := primitive.ObjectIDFromHex(postID.PostID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid postID format"})
+			return
+		}
+
+		eventObjID, err := primitive.ObjectIDFromHex(postID.EventID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid eventID format"})
+			return
+		}
+
+		err = DeletePostFromPostList(postObjID, eventObjID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		_, err = postCollection.DeleteOne(ctx, bson.M{"_id": postObjID})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"success": true, "data": postID})
+	}
+}
+
+func DeletePost() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		type DeletePost struct {
+			EventID string `json:"eventID"`
+			PostID  string `json:"postID"`
+		}
+
+		var postID DeletePost
+		if err := c.BindJSON(&postID); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		postObjID, err := primitive.ObjectIDFromHex(postID.PostID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid postID format"})
+			return
+		}
+
+		eventObjID, err := primitive.ObjectIDFromHex(postID.EventID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid eventID format"})
+			return
+		}
+
+		err = DeletePostFromPostList(postObjID, eventObjID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		_, err = postCollection.DeleteOne(ctx, bson.M{"_id": postObjID})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"success": true, "data": postID})
+	}
+}
+
 func NewPost(post models.Post, timeUp bool) interface{} {
 	switch post.Kind {
 	case "post":

@@ -32,6 +32,18 @@ func CreateNewEvent() gin.HandlerFunc {
 			return
 		}
 
+		event.Participants = []string{}
+		event.Staff = []models.StaffMember{}
+		event.PostList = []primitive.ObjectID{}
+
+		eventName := event.EventName
+		var eventCheck models.Event
+		err := eventCollection.FindOne(ctx, bson.M{"eventName": eventName}).Decode(&eventCheck)
+		if err == nil {
+			c.JSON(http.StatusConflict, gin.H{"error": "Event already exists"})
+			return
+		}
+
 		result, err := eventCollection.InsertOne(ctx, event)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating event"})
@@ -148,6 +160,32 @@ func AddPostToPostList(postID primitive.ObjectID, eventID primitive.ObjectID) er
 
 	update := bson.D{
 		{"$addToSet", bson.D{
+			{"postList", postID},
+		}},
+	}
+
+	// Perform the update operation
+	result, err := eventCollection.UpdateOne(ctx, bson.M{"_id": eventID}, update)
+	if err != nil {
+		log.Printf("Error updating event: %v", err)
+		return err
+	}
+
+	// Log the result of the update operation
+	log.Printf("MatchedCount: %d, ModifiedCount: %d", result.MatchedCount, result.ModifiedCount)
+
+	return nil
+}
+
+func DeletePostFromPostList(postID primitive.ObjectID, eventID primitive.ObjectID) error {
+	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+	defer cancel()
+
+	// Log the postID and eventID
+	log.Printf("Deleting postID: %s from eventID: %s", postID.Hex(), eventID.Hex())
+
+	update := bson.D{
+		{"$pull", bson.D{
 			{"postList", postID},
 		}},
 	}
