@@ -32,6 +32,17 @@ func CreateNewEvent() gin.HandlerFunc {
 			return
 		}
 
+		event.Participants = []string{}
+		event.Staff = []models.StaffMember{}
+
+		eventName := event.EventName
+		var eventCheck models.Event
+		err := eventCollection.FindOne(ctx, bson.M{"eventName": eventName}).Decode(&eventCheck)
+		if err == nil {
+			c.JSON(http.StatusConflict, gin.H{"error": "Event already exists"})
+			return
+		}
+
 		result, err := eventCollection.InsertOne(ctx, event)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating event"})
