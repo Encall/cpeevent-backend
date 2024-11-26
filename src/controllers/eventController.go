@@ -21,29 +21,29 @@ import (
 var eventCollection *mongo.Collection = database.OpenCollection(database.Client, "events")
 
 func AddPostToPostList(postID primitive.ObjectID, eventID primitive.ObjectID) error {
-    var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-    defer cancel()
+	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+	defer cancel()
 
-    // Log the postID and eventID
-    log.Printf("Adding postID: %s to eventID: %s", postID.Hex(), eventID.Hex())
+	// Log the postID and eventID
+	log.Printf("Adding postID: %s to eventID: %s", postID.Hex(), eventID.Hex())
 
-    update := bson.D{
-        {"$addToSet", bson.D{
-            {"postList", postID},
-        }},
-    }
+	update := bson.D{
+		{"$addToSet", bson.D{
+			{"postList", postID},
+		}},
+	}
 
-    // Perform the update operation
-    result, err := eventCollection.UpdateOne(ctx, bson.M{"_id": eventID}, update)
-    if err != nil {
-    	log.Printf("Error updating event: %v", err)
-        return err
-    }
+	// Perform the update operation
+	result, err := eventCollection.UpdateOne(ctx, bson.M{"_id": eventID}, update)
+	if err != nil {
+		log.Printf("Error updating event: %v", err)
+		return err
+	}
 
-    // Log the result of the update operation
-    log.Printf("MatchedCount: %d, ModifiedCount: %d", result.MatchedCount, result.ModifiedCount)
+	// Log the result of the update operation
+	log.Printf("MatchedCount: %d, ModifiedCount: %d", result.MatchedCount, result.ModifiedCount)
 
-    return nil
+	return nil
 }
 
 func GetEvents() gin.HandlerFunc {
@@ -121,6 +121,7 @@ func JoinEvent() gin.HandlerFunc {
 		type JoinRequest struct {
 			EventID string `json:"eventID" binding:"required"`
 			Role    string `json:"role" binding:"required"`
+			SubRole string `json:"subRole"`
 		}
 
 		var joinRequest JoinRequest
@@ -164,11 +165,10 @@ func JoinEvent() gin.HandlerFunc {
 		}
 
 		var staffMember models.StaffMember
-
 		update := bson.D{}
 		if joinRequest.Role == "staff" {
 			staffMember.StdID = userID.(string)
-			staffMember.Role = ""
+			staffMember.Role = joinRequest.SubRole
 			update = bson.D{
 				{"$addToSet", bson.D{
 					{"staff", staffMember},
