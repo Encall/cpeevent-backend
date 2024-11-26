@@ -50,6 +50,7 @@ func UserRoutes(route *gin.RouterGroup) {
 		protected.GET("posts/:postID", controllers.GetPostFromPostId())
 		protected.POST("/posts/create", controllers.CreateNewPost())
 		protected.PATCH("/posts/update", controllers.UpdatePost())
+		protected.DELETE("/posts/delete", controllers.DeletePost())
 		protected.POST("posts/submit", controllers.SubmitAnswer())
 		protected.GET("posts/answer", controllers.GetUserAnswer())
 		protected.GET("posts/summary/:postID", controllers.GetSummaryAnswer())
