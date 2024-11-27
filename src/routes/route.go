@@ -34,6 +34,7 @@ func UserRoutes(route *gin.RouterGroup) {
 		protected.GET("/protected-route", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"message": "This is a protected route"})
 		})
+		protected.GET("/event/getEvent/:eventID", controllers.GetEvent())
 		protected.GET("/testevent", controllers.TestEvents())
 		protected.GET("/event/:eventID/posts", controllers.GetPostFromEvent())
 		protected.GET("/event/:eventID/members", controllers.GetEventMembers())
@@ -63,7 +64,6 @@ func UserRoutes(route *gin.RouterGroup) {
 			c.JSON(http.StatusOK, gin.H{"message": "This is a protected route with level 2 access"})
 		})
 		protected.POST("/event/create", controllers.CreateNewEvent())
-		protected.GET("/event/getEvent/:eventID", controllers.GetEvent())
 		protected.PUT("/event/updateEvent", controllers.UpdateEvent())
 		protected.DELETE("/event/deleteEvent", controllers.DeleteEvent())
 	}
