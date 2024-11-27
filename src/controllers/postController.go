@@ -106,6 +106,12 @@ func DeletePost() gin.HandlerFunc {
 			return
 		}
 
+		_, err = transactionCollection.DeleteMany(ctx, bson.M{"postID": postObjID})
+        if err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting transactions"})
+            return
+        }
+
 		c.JSON(http.StatusOK, gin.H{"success": true, "data": postID})
 	}
 }
