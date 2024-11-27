@@ -133,35 +133,43 @@ func DeleteEvent() gin.HandlerFunc {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
 
-		// Define a struct to represent the request body
-		type DeleteEventRequest struct {
-			EventID string `json:"_id"`
-		}
 
-		var req DeleteEventRequest
-		if err := c.BindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		eventParam := c.Param("eventID")
+
+		eventID, err := primitive.ObjectIDFromHex(eventParam)
+		if err != nil{
+			c.JSON(http.StatusBadRequest, gin.H{"error":"Invalid Event ID"})
 			return
 		}
 
-		if req.EventID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "eventID is required"})
+		var event models.Event
+
+		if err := eventCollection.FindOne(ctx, bson.M{"_id": eventID}).Decode(&event); err != nil{
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		objectID, err := primitive.ObjectIDFromHex(req.EventID)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid eventID format"})
+		log.Println(event.EventName)
+
+		//Delete all Post first (in which the function will delete all answer transaction in each post)
+		if err := DeleteAllPosts(eventID); err != nil{
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+
+		filterEventDelete := bson.M{"_id": eventID}
+		_, err = eventCollection.DeleteOne(ctx, filterEventDelete)
+		if err != nil{
+			c.JSON(http.StatusInternalServerError, gin.H{"error":err.Error()})
 			return
 		}
 
-		result, err := eventCollection.DeleteOne(ctx, bson.M{"_id": objectID})
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting event"})
-			return
-		}
 
-		c.JSON(http.StatusOK, gin.H{"data": result, "message": "Event deleted successfully"})
+		c.JSON(http.StatusOK, gin.H{"success": true, "message": "Delete event successfully"})
+		return 
+
+
+
+		// log.Println(event)
 	}
 }
 
