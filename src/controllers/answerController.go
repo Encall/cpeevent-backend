@@ -290,23 +290,20 @@ func GetSummaryAnswer() gin.HandlerFunc{
             return
 
         }
-
-       
-
-        
-
-        
-		
-
-        // if err := cursor.All(ctx, &answer); err != nil{
-        //     c.JSON(http.StatusInternalServerError, gin.H{"error":err.Error()})
-        //     return
-        // }
-
-        // c.JSON(http.StatusOK, answer)
-
-        
-
-
     }
+}
+
+func DeleteAllAnswers(postID primitive.ObjectID) error{
+    ctx, cancel := context.WithTimeout(context.Background(), 100 * time.Second)
+    defer cancel()
+    log.Println(postID)
+
+    filter := bson.M{"postID": postID}
+
+    _, err := transactionCollection.DeleteMany(ctx, filter)
+    if err != nil{
+        log.Println("Error deleting transaction:", err)
+        return err
+    }
+    return nil
 }
