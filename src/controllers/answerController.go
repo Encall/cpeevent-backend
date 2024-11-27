@@ -19,6 +19,12 @@ import (
 
 var transactionCollection *mongo.Collection = database.OpenCollection(database.Client, "transactions")
 
+type QuestionForm struct{
+    QuestionIndex int `json:"questionIndex"`
+    Question string `json:"question"`
+}
+
+
 func SubmitAnswer() gin.HandlerFunc {
     return func(c *gin.Context) {
         var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
@@ -206,7 +212,7 @@ func GetSummaryAnswer() gin.HandlerFunc{
             c.JSON(http.StatusOK, gin.H{"success": true, "data": response})
 
         case "form":
-            var answers []models.AForm
+            var answers []models.AForm        
             query := bson.M{"postID": postID}
             cursor, err := transactionCollection.Find(ctx, query)
             if err != nil {
@@ -254,10 +260,21 @@ func GetSummaryAnswer() gin.HandlerFunc{
                 return results[i]["questionIndex"].(int) < results[j]["questionIndex"].(int)
             })
 
+            var question []QuestionForm
+            for i, fq := range post.FormQuestions{
+                question = append(question, QuestionForm{
+                    QuestionIndex: i,
+                    Question: fq.Question,
+                })
+            }
+
             response := map[string]interface{}{
                 "postID":  postID,
+                "formQestion": question,
                 "results": results,
             }
+
+            
 
             c.JSON(http.StatusOK, gin.H{"success": true, "data": response})
         default:
