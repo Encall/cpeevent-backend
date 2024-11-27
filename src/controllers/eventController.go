@@ -102,15 +102,29 @@ func UpdateEvent() gin.HandlerFunc {
 
 		objectID := req.ID
 
-		update := bson.D{{Key: "$set", Value: req}}
+		// Create a map with the fields to update
+		update := bson.D{
+			{Key: "$set", Value: bson.D{
+				{Key: "eventName", Value: req.EventName},
+				{Key: "eventDescription", Value: req.EventDescription},
+				{Key: "kind", Value: req.Kind},
+				{Key: "startDate", Value: req.StartDate},
+				{Key: "endDate", Value: req.EndDate},
+				{Key: "nParticipant", Value: req.NParticipant},
+				{Key: "nStaff", Value: req.NStaff},
+				{Key: "role", Value: req.Role},
+				{Key: "president", Value: req.President},
+			}},
+		}
 
+		// Perform the update operation
 		result, err := eventCollection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error updating event"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"data": result, "message": "Event updated successfully"})
+		c.JSON(http.StatusOK, result)
 	}
 }
 
