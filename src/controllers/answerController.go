@@ -278,7 +278,7 @@ func GetSummaryAnswer() gin.HandlerFunc{
 
             response := map[string]interface{}{
                 "postID":  postID,
-                "formQestion": question,
+                "formQuestion": question,
                 "results": results,
             }
 
