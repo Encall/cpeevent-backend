@@ -52,7 +52,7 @@ func UserRoutes(route *gin.RouterGroup) {
 		protected.PATCH("/posts/update", controllers.UpdatePost())
 		protected.DELETE("/posts/delete", controllers.DeletePost())
 		protected.POST("posts/submit", controllers.SubmitAnswer())
-		protected.GET("posts/answer", controllers.GetUserAnswer())
+		protected.GET("posts/answer/:postID/:studentID", controllers.GetUserAnswer())
 		protected.GET("posts/summary/:postID", controllers.GetSummaryAnswer())
 
 	}
