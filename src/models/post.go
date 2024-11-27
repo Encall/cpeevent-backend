@@ -19,7 +19,7 @@ type FormQuestion struct {
 
 // Post represents a general post.
 type Post struct {
-	PostID        string              //use get postID in string format
+	PostID        string              `bson:"postID,omitempty" json:"postID,omitempty"` //use get postID in string format
 	ID            primitive.ObjectID  `bson:"_id" json:"_id"`
 	Kind          string              `bson:"kind" json:"kind"`
 	AssignTo      []string            `bson:"assignTo" json:"assignTo"`
