@@ -114,10 +114,18 @@ func GetUserAnswer() gin.HandlerFunc {
 			StudentID string             `json:"studentID"`
 			PostID    primitive.ObjectID `json:"postID"`
 		}
-		if err := c.BindJSON(&request); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+
+		request.StudentID = c.Param("studentID")
+		var postID = c.Param("postID")
+		println(postID)
+		println(request.StudentID)
+		var err error
+		request.PostID, err = primitive.ObjectIDFromHex(postID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid postID format"})
 			return
 		}
+
 		// Query the post by its ID
 		log.Print(request.PostID)
 		var post models.Post
@@ -288,6 +296,7 @@ func GetSummaryAnswer() gin.HandlerFunc{
         
 
         
+		
 
         // if err := cursor.All(ctx, &answer); err != nil{
         //     c.JSON(http.StatusInternalServerError, gin.H{"error":err.Error()})
