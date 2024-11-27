@@ -65,6 +65,6 @@ func UserRoutes(route *gin.RouterGroup) {
 		})
 		protected.POST("/event/create", controllers.CreateNewEvent())
 		protected.PUT("/event/updateEvent", controllers.UpdateEvent())
-		protected.DELETE("/event/deleteEvent", controllers.DeleteEvent())
+		protected.DELETE("/event/deleteEvent/:eventID", controllers.DeleteEvent())
 	}
 }

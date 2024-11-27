@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"time"
 
@@ -16,6 +17,43 @@ import (
 )
 
 var postCollection *mongo.Collection = database.OpenCollection(database.Client, "posts")
+
+func DeleteAllPosts(eventID primitive.ObjectID) error{
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+	defer cancel()
+	var event models.Event
+
+	// This module is to find the event according to the input eventID
+	filter := bson.M{"_id": eventID}
+	err := eventCollection.FindOne(ctx, filter).Decode(&event)
+	if err != nil{
+		log.Println("error finding event :", err)
+		return err
+	}
+
+	//List all the posts which are in event ID
+	var postList = event.PostList
+	log.Println(postList)
+
+	// DeleteAllAnswers(event.PostList[0])
+
+	for _, postID := range event.PostList{
+		if err := DeleteAllAnswers(postID); err != nil{
+			log.Println("error deleting for postID: ", postID, err)
+			return err
+		}
+	}
+
+	// This module is to delete all post which are in the postList	
+	deleteFilter := bson.M{"_id": bson.M{"$in": postList}}
+	_, err = postCollection.DeleteMany(ctx, deleteFilter)
+	if err != nil{
+		log.Println("Error deleting posts: ", err)
+		return err
+	}
+	return err
+
+}
 
 func UpdatePost() gin.HandlerFunc {
 	return func(c *gin.Context) {
