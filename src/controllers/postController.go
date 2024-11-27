@@ -223,7 +223,7 @@ func GetPostFromEvent() gin.HandlerFunc {
 		var posts []models.Post
 		var cursor *mongo.Cursor
 		if isStaff {
-			cursor, err = postCollection.Find(ctx, bson.M{"_id": bson.M{"$in": event.PostList}, "$or": []bson.M{{"assignTo": role}, {"assignTo": "everyone"}}})
+			cursor, err = postCollection.Find(ctx, bson.M{"_id": bson.M{"$in": event.PostList}, "$or": []bson.M{{"assignTo": role}, {"assignTo": "everyone"}, {"public": true}}})
 		} else {
 			cursor, err = postCollection.Find(ctx, bson.M{"_id": bson.M{"$in": event.PostList}, "public": true})
 		}
