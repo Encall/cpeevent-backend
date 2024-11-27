@@ -16,7 +16,7 @@ import (
 var (
 	requestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "cpeevo_http_request_duration_seconds",
+			Name:    "cpeevo_backend_http_request_duration_seconds",
 			Help:    "Duration of HTTP requests.",
 			Buckets: prometheus.DefBuckets,
 		},
@@ -24,14 +24,14 @@ var (
 	)
 	requestCount = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "cpeevo_http_requests_total",
+			Name: "cpeevo_backend_http_requests_total",
 			Help: "Total number of HTTP requests.",
 		},
 		[]string{"path", "method"},
 	)
 	errorCount = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "cpeevo_http_errors_total",
+			Name: "cpeevo_backend_http_errors_total",
 			Help: "Total number of HTTP error responses.",
 		},
 		[]string{"path", "method", "status"},
