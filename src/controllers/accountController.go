@@ -15,7 +15,7 @@ import (
 // var validate = validator.New()
 
 type UpdateAccountInfo struct { //You have to name the struct field according to the JSON attribute
-	StudentID	string `json:"studentID" bson:"studentID"`
+	StudentID   string `json:"studentID" bson:"studentID"`
 	FirstName   string `json:"firstName" bson:"firstName"`
 	LastName    string `json:"lastName" bson:"lastName"`
 	Year        int    `json:"year" bson:"year"`

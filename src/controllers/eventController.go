@@ -88,6 +88,12 @@ func UpdateEvent() gin.HandlerFunc {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
 
+		// var event models.Event
+		// if err := eventCollection.FindOne(ctx, bson.M{"_id": event.ID}).Decode(&event); err != nil {
+		// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		// 	return
+		// }
+
 		// Define a struct to represent the request body
 		var req models.Event
 		if err := c.BindJSON(&req); err != nil {
@@ -101,6 +107,32 @@ func UpdateEvent() gin.HandlerFunc {
 		}
 
 		objectID := req.ID
+
+		studentid, exists := c.Get("studentid")
+		if !exists {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "studentid not found"})
+			return
+		}
+		accessValue, exists := c.Get("access")
+		if !exists {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "access not found"})
+			return
+		}
+		access := accessValue.(int)
+
+		if access == 2 {
+			// Check if the user is the author of the eventss
+			var event models.Event
+			if err := eventCollection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&event); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
+			if *event.President != studentid {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": event})
+				return
+			}
+		}
 
 		// Create a map with the fields to update
 		update := bson.D{
@@ -133,18 +165,17 @@ func DeleteEvent() gin.HandlerFunc {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
 
-
 		eventParam := c.Param("eventID")
 
 		eventID, err := primitive.ObjectIDFromHex(eventParam)
-		if err != nil{
-			c.JSON(http.StatusBadRequest, gin.H{"error":"Invalid Event ID"})
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid Event ID"})
 			return
 		}
 
 		var event models.Event
 
-		if err := eventCollection.FindOne(ctx, bson.M{"_id": eventID}).Decode(&event); err != nil{
+		if err := eventCollection.FindOne(ctx, bson.M{"_id": eventID}).Decode(&event); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -152,22 +183,19 @@ func DeleteEvent() gin.HandlerFunc {
 		log.Println(event.EventName)
 
 		//Delete all Post first (in which the function will delete all answer transaction in each post)
-		if err := DeleteAllPosts(eventID); err != nil{
+		if err := DeleteAllPosts(eventID); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
 
 		filterEventDelete := bson.M{"_id": eventID}
 		_, err = eventCollection.DeleteOne(ctx, filterEventDelete)
-		if err != nil{
-			c.JSON(http.StatusInternalServerError, gin.H{"error":err.Error()})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-
 		c.JSON(http.StatusOK, gin.H{"success": true, "message": "Delete event successfully"})
-		return 
-
-
+		return
 
 		// log.Println(event)
 	}
