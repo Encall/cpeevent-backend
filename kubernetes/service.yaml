@@ -2,10 +2,13 @@ apiVersion: v1
 kind: Service
 metadata:
   name: cpeevo-backend
+  labels:
+    app: cpeevo-backend
 spec:
   selector:
     app: cpeevo-backend
   ports:
-    - protocol: TCP
+    - name: http
+      protocol: TCP
       port: 80
       targetPort: 8080

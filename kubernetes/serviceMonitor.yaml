@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: cpeevo-backend-monitor
+  labels:
+    release: kube-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: cpeevo-backend
+  namespaceSelector:
+    matchNames:
+      - default
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 15s
