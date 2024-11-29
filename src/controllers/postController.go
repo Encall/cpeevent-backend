@@ -18,7 +18,7 @@ import (
 
 var postCollection *mongo.Collection = database.OpenCollection(database.Client, "posts")
 
-func DeleteAllPosts(eventID primitive.ObjectID) error{
+func DeleteAllPosts(eventID primitive.ObjectID) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
 	var event models.Event
@@ -26,7 +26,7 @@ func DeleteAllPosts(eventID primitive.ObjectID) error{
 	// This module is to find the event according to the input eventID
 	filter := bson.M{"_id": eventID}
 	err := eventCollection.FindOne(ctx, filter).Decode(&event)
-	if err != nil{
+	if err != nil {
 		log.Println("error finding event :", err)
 		return err
 	}
@@ -37,17 +37,17 @@ func DeleteAllPosts(eventID primitive.ObjectID) error{
 
 	// DeleteAllAnswers(event.PostList[0])
 
-	for _, postID := range event.PostList{
-		if err := DeleteAllAnswers(postID); err != nil{
+	for _, postID := range event.PostList {
+		if err := DeleteAllAnswers(postID); err != nil {
 			log.Println("error deleting for postID: ", postID, err)
 			return err
 		}
 	}
 
-	// This module is to delete all post which are in the postList	
+	// This module is to delete all post which are in the postList
 	deleteFilter := bson.M{"_id": bson.M{"$in": postList}}
 	_, err = postCollection.DeleteMany(ctx, deleteFilter)
-	if err != nil{
+	if err != nil {
 		log.Println("Error deleting posts: ", err)
 		return err
 	}
@@ -145,10 +145,10 @@ func DeletePost() gin.HandlerFunc {
 		}
 
 		_, err = transactionCollection.DeleteMany(ctx, bson.M{"postID": postObjID})
-        if err != nil {
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting transactions"})
-            return
-        }
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting transactions"})
+			return
+		}
 
 		c.JSON(http.StatusOK, gin.H{"success": true, "data": postID})
 	}
@@ -184,6 +184,54 @@ func CreateNewPost() gin.HandlerFunc {
 		}
 		// Log the eventID
 		eventID := request.EventID
+
+		stdID, exist := c.Get("studentid")
+		if !exist {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "User ID not found in context"})
+			return
+		}
+
+		access, exist := c.Get("access")
+		if !exist {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Access level not found in context"})
+			return
+		}
+
+		var event models.Event
+		if err := eventCollection.FindOne(ctx, bson.M{"_id": eventID}).Decode(&event); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Event not found"})
+			return
+		}
+		isStaff := false
+		if access == 1 || access == 2 {
+			log.Println("first check staff")
+			for _, staff := range event.Staff {
+				if staff.StdID == stdID {
+					isStaff = true
+					log.Println("staff")
+					break
+				}
+			}
+			if !isStaff {
+				c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient access level (you are not staff)"})
+				return
+			}
+		}
+
+		if access == 2 && !isStaff {
+			log.Println("second check president")
+			isPresident := false
+			for _, staff := range event.Staff {
+				if staff.StdID == stdID && staff.Role == "president" {
+					isPresident = true
+					break
+				}
+			}
+			if !isPresident {
+				c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient access level (you are not president of this event)"})
+				return
+			}
+		}
 
 		// Initialize the ID field if it's not already set
 		if request.UpdatedPost.ID.IsZero() {
