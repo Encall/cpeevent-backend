@@ -253,7 +253,7 @@ func RefreshToken() gin.HandlerFunc {
 		var user models.User
 		err := userCollection.FindOne(ctx, bson.M{"studentID": refreshTokenRequest.UserID, "refresh_token": refreshToken}).Decode(&user)
 		if err != nil {
-			log.Println("Error querying db", err)
+			log.Println("Error querying db", err, refreshToken)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid refresh token"})
 			return
 		}

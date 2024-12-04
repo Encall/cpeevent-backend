@@ -307,7 +307,7 @@ func GetPostFromEvent() gin.HandlerFunc {
 
 		// Check if the user is a participant or staff in the event
 		if !isParticipant && !isStaff {
-			c.JSON(http.StatusOK, gin.H{"success": true, "data": []interface{}{}})
+			c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
 			return
 		}
 
