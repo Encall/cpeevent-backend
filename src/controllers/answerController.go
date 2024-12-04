@@ -138,6 +138,10 @@ func GetUserAnswer() gin.HandlerFunc {
 		case "vote":
 			var vote models.AVote
 			if err := transactionCollection.FindOne(ctx, bson.M{"postID": request.PostID, "studentID": request.StudentID}).Decode(&vote); err != nil {
+                if err == mongo.ErrNoDocuments{
+                    c.JSON(http.StatusOK, gin.H{"success": true})
+                    return
+                }
 				log.Printf("Error finding vote: %v", err)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Vote not found"})
 				return
@@ -148,6 +152,10 @@ func GetUserAnswer() gin.HandlerFunc {
 			var form models.AForm
 			query := bson.M{"postID": request.PostID, "studentID": request.StudentID}
 			if err := transactionCollection.FindOne(ctx, query).Decode(&form); err != nil {
+                if err == mongo.ErrNoDocuments{
+                    c.JSON(http.StatusOK, gin.H{"success": true})
+                    return
+                }
 				log.Printf("Error finding form: %v", err)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Form not found"})
 				return
