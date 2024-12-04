@@ -139,7 +139,7 @@ func GetUserAnswer() gin.HandlerFunc {
 			var vote models.AVote
 			if err := transactionCollection.FindOne(ctx, bson.M{"postID": request.PostID, "studentID": request.StudentID}).Decode(&vote); err != nil {
                 if err == mongo.ErrNoDocuments{
-                    c.JSON(http.StatusOK, gin.H{"success": true})
+                    c.JSON(http.StatusOK, gin.H{"success": true, "data": nil})
                     return
                 }
 				log.Printf("Error finding vote: %v", err)
@@ -153,7 +153,7 @@ func GetUserAnswer() gin.HandlerFunc {
 			query := bson.M{"postID": request.PostID, "studentID": request.StudentID}
 			if err := transactionCollection.FindOne(ctx, query).Decode(&form); err != nil {
                 if err == mongo.ErrNoDocuments{
-                    c.JSON(http.StatusOK, gin.H{"success": true})
+                    c.JSON(http.StatusOK, gin.H{"success": true, "data": nil})
                     return
                 }
 				log.Printf("Error finding form: %v", err)
