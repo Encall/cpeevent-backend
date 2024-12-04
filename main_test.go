@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/encall/cpeevent-backend/src/controllers"
 	"github.com/encall/cpeevent-backend/src/routes"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -150,37 +151,31 @@ func TestAPIEndpoint(t *testing.T) {
 	}
 }
 
-// func TestMetricsAfterRequests(t *testing.T) {
-// 	router := setupRouter()
+func TestGetPostFromEvent(t *testing.T) {
+	// Setup the Gin router
+	setupRouter()
 
-// 	// Initial metrics
-// 	req, _ := http.NewRequest("GET", "/metrics", nil)
-// 	w := httptest.NewRecorder()
-// 	router.ServeHTTP(w, req)
-// 	initialMetrics := string(w.Body.Bytes())
+	// Create a test context and response recorder
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
 
-// 	// Send additional requests
-// 	req, _ = http.NewRequest("GET", "/healthcheck", nil)
-// 	router.ServeHTTP(httptest.NewRecorder(), req)
+	// Set the necessary parameters and headers
+	ctx.Params = gin.Params{
+		{Key: "eventID", Value: "6748b6dcbfc7262e96ab9d59"}, // Example eventID
+	}
+	ctx.Set("studentid", "exampleStudentID")
 
-// 	req, _ = http.NewRequest("GET", "/api/nonexistent", nil)
-// 	router.ServeHTTP(httptest.NewRecorder(), req)
+	// Call the function
+	controllers.GetPostFromEvent()(ctx)
 
-// 	// Fetch metrics again
-// 	req, _ = http.NewRequest("GET", "/metrics", nil)
-// 	w = httptest.NewRecorder()
-// 	router.ServeHTTP(w, req)
-// 	newMetrics := string(w.Body.Bytes())
+	// Check the response status code
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", w.Code)
+	}
 
-// 	if initialMetrics == newMetrics {
-// 		t.Errorf("Metrics did not change after making requests")
-// 	}
-
-// 	if !strings.Contains(newMetrics, `http_requests_total{path="/healthcheck",method="GET"}`) {
-// 		t.Errorf("Metric for /healthcheck GET request not found or not incremented")
-// 	}
-
-// 	if !strings.Contains(newMetrics, `http_errors_total{path="/api/nonexistent",method="GET",status="Not Found"}`) {
-// 		t.Errorf("Metric for /api/nonexistent GET request not found or not incremented")
-// 	}
-// }
+	// Check the response body
+	expectedBody := `{"data":[],"success":true}` // Adjust based on actual implementation
+	if w.Body.String() != expectedBody {
+		t.Errorf("Expected body %s, got %s", expectedBody, w.Body.String())
+	}
+}
