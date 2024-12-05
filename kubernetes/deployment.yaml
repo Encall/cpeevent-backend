@@ -58,6 +58,11 @@ spec:
             configMapKeyRef:
               name: cpeevo-config
               key: ORIGIN_URL
+        resources:
+          requests:
+            cpu: "100m"
+          limits:
+            cpu: "1000m"
         livenessProbe:
           httpGet:
             path: /healthcheck
