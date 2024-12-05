@@ -203,7 +203,9 @@ func CreateNewPost() gin.HandlerFunc {
 			return
 		}
 		isStaff := false
+		isPresident := false
 		if access == 1 || access == 2 {
+			log.Println("stdID", stdID)
 			log.Println("first check staff")
 			for _, staff := range event.Staff {
 				if staff.StdID == stdID {
@@ -212,26 +214,29 @@ func CreateNewPost() gin.HandlerFunc {
 					break
 				}
 			}
-			if !isStaff {
+			if stdID == event.President {
+				isPresident = true
+				log.Println("president")
+			}
+			if !isStaff || !isPresident {
 				c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient access level (you are not staff)"})
 				return
 			}
 		}
 
-		if access == 2 && !isStaff {
-			log.Println("second check president")
-			isPresident := false
-			for _, staff := range event.Staff {
-				if staff.StdID == stdID && staff.Role == "president" {
-					isPresident = true
-					break
-				}
-			}
-			if !isPresident {
-				c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient access level (you are not president of this event)"})
-				return
-			}
-		}
+		// if access == 2 && !isStaff {
+		// 	log.Println("second check president")
+		// 	for _, staff := range event.Staff {
+		// 		if staff.StdID == stdID && staff.Role == "president" {
+		// 			isPresident = true
+		// 			break
+		// 		}
+		// 	}
+		// 	if !isPresident {
+		// 		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient access level (you are not president of this event)"})
+		// 		return
+		// 	}
+		// }
 
 		// Initialize the ID field if it's not already set
 		if request.UpdatedPost.ID.IsZero() {
