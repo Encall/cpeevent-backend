@@ -66,8 +66,6 @@ func SignUp() gin.HandlerFunc {
 			return
 		}
 
-		log.Println("Incoming JSON payload for SignUp:", user)
-
 		validationErr := validate.Struct(user)
 		if validationErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"success": false, "data": nil, "message": validationErr.Error()})
@@ -136,8 +134,6 @@ func Login() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-
-		log.Println("Incoming JSON payload for Login:", loginRequest)
 
 		var foundUser models.User
 		err := userCollection.FindOne(ctx, bson.M{"studentID": loginRequest.StudentID}).Decode(&foundUser)
