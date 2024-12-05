@@ -203,32 +203,19 @@ func CreateNewPost() gin.HandlerFunc {
 			return
 		}
 		isStaff := false
+		isPresident := false
 		if access == 1 || access == 2 {
-			log.Println("first check staff")
 			for _, staff := range event.Staff {
 				if staff.StdID == stdID {
 					isStaff = true
-					log.Println("staff")
 					break
 				}
 			}
-			if !isStaff {
+			if stdID == *event.President {
+				isPresident = true
+			}
+			if !isStaff && !isPresident {
 				c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient access level (you are not staff)"})
-				return
-			}
-		}
-
-		if access == 2 && !isStaff {
-			log.Println("second check president")
-			isPresident := false
-			for _, staff := range event.Staff {
-				if staff.StdID == stdID && staff.Role == "president" {
-					isPresident = true
-					break
-				}
-			}
-			if !isPresident {
-				c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient access level (you are not president of this event)"})
 				return
 			}
 		}

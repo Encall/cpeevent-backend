@@ -180,8 +180,6 @@ func DeleteEvent() gin.HandlerFunc {
 			return
 		}
 
-		log.Println(event.EventName)
-
 		//Delete all Post first (in which the function will delete all answer transaction in each post)
 		if err := DeleteAllPosts(eventID); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -196,17 +194,12 @@ func DeleteEvent() gin.HandlerFunc {
 
 		c.JSON(http.StatusOK, gin.H{"success": true, "message": "Delete event successfully"})
 		return
-
-		// log.Println(event)
 	}
 }
 
 func AddPostToPostList(postID primitive.ObjectID, eventID primitive.ObjectID) error {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
-
-	// Log the postID and eventID
-	log.Printf("Adding postID: %s to eventID: %s", postID.Hex(), eventID.Hex())
 
 	update := bson.D{
 		{"$addToSet", bson.D{
@@ -230,9 +223,6 @@ func AddPostToPostList(postID primitive.ObjectID, eventID primitive.ObjectID) er
 func DeletePostFromPostList(postID primitive.ObjectID, eventID primitive.ObjectID) error {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
-
-	// Log the postID and eventID
-	log.Printf("Deleting postID: %s from eventID: %s", postID.Hex(), eventID.Hex())
 
 	update := bson.D{
 		{"$pull", bson.D{
