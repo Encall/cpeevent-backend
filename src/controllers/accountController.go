@@ -1,8 +1,11 @@
 package controllers
 
 import (
+	"bytes"
 	"context"
-	"fmt"
+	"encoding/base64"
+	"io"
+	"log"
 	"net/http"
 	"time"
 
@@ -23,29 +26,24 @@ type UpdateAccountInfo struct { //You have to name the struct field according to
 	PhoneNumber string `json:"phoneNumber" bson:"phoneNumber"`
 }
 
-type UpdateUsernameInfo struct {
-	Username string `json:"username" bson:"username"`
+type User struct {
+	Username   string `json:"username" bson:"username"`
+	ImgProfile []byte `json:"imgProfile" bson:"imgProfile"`
 }
 
-func GetUsername() gin.HandlerFunc {
+func GetProfile() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		userID, exists := c.Get("studentid")
-
-		fmt.Println(userID)
-
+		defer cancel()
 		if !exists {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "User ID not found in context"})
 			return
 		}
 
-		var username UpdateUsernameInfo
+		var user User
 
-		projection := bson.M{
-			"username": 1,
-		}
-
-		err := userCollection.FindOne(ctx, bson.M{"studentID": userID}, options.FindOne().SetProjection(projection)).Decode(&username)
+		err := userCollection.FindOne(ctx, bson.M{"studentID": userID}).Decode(&user)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -53,12 +51,16 @@ func GetUsername() gin.HandlerFunc {
 		}
 		defer cancel()
 
-		c.JSON(http.StatusOK, gin.H{"sucess": true, "data": username})
+		var imageBase64 string
+		if len(user.ImgProfile) > 0 {
+			imageBase64 = base64.StdEncoding.EncodeToString(user.ImgProfile)
+		}
 
+		c.JSON(http.StatusOK, gin.H{"success": true, "data": gin.H{"username": user.Username, "imgProfile": imageBase64}})
 	}
 }
 
-func UpdateUsername() gin.HandlerFunc {
+func UpdateProfile() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		userID, exists := c.Get("studentid")
@@ -67,20 +69,51 @@ func UpdateUsername() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "User ID not found in context"})
 			return
 		}
-		var username UpdateUsernameInfo
 
-		if err := c.BindJSON(&username); err != nil {
+		username := c.PostForm("username")
+		file, err := c.FormFile("file")
+		if err != nil {
+			println("error here")
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		updateInfo := bson.M{
-			"username": username.Username,
+		updateFields := bson.M{}
+
+		if username != "" {
+			updateFields["username"] = username
 		}
 
-		result, err := userCollection.UpdateOne(ctx, bson.M{"studentID": userID}, bson.M{"$set": updateInfo})
+		if file != nil {
+			uploadFile, err := file.Open()
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to open image"})
+				log.Println("error here open")
+				return
+			}
+			defer uploadFile.Close()
+
+			var buf bytes.Buffer
+			_, err = io.Copy(&buf, uploadFile)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to read image"})
+				log.Println("error here read")
+				return
+			}
+
+			updateFields["imgProfile"] = buf.Bytes()
+		}
+
+		if len(updateFields) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "No update field provided"})
+			log.Println("error here no update")
+			return
+		}
+
+		result, err := userCollection.UpdateOne(ctx, bson.M{"studentID": userID}, bson.M{"$set": updateFields})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			log.Println("error here insert")
 			return
 		}
 
